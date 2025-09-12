@@ -3,12 +3,14 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
   insertUserSchema, 
+  loginUserSchema,
   insertCitySchema, 
   insertPropertyCategorySchema, 
   insertPropertySchema, 
   insertBlogSchema, 
   insertTestimonialSchema, 
-  insertBookingSchema 
+  insertBookingSchema,
+  updateBookingStatusSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -71,6 +73,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(userWithoutPassword);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Authentication routes
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = loginUserSchema.parse(req.body);
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user || user.passwordHash !== `hashed_${password}`) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+
+      if (!user.isActive) {
+        return res.status(403).json({ error: "Account is deactivated" });
+      }
+
+      const { passwordHash, ...userWithoutPassword } = user;
+      res.json({ 
+        message: "Login successful", 
+        user: userWithoutPassword,
+        token: `mock_jwt_token_${user.id}` // In real app, generate proper JWT
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(409).json({ error: "User with this email already exists" });
+      }
+
+      const user = await storage.createUser(userData);
+      const { passwordHash, ...userWithoutPassword } = user;
+      res.status(201).json({ 
+        message: "Registration successful", 
+        user: userWithoutPassword,
+        token: `mock_jwt_token_${user.id}`
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Admin routes
+  app.get("/api/admin/users", async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      const usersWithoutPasswords = users.map(({ passwordHash, ...user }) => user);
+      res.json(usersWithoutPasswords);
+    } catch (error: any) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/admin/users/role/:role", async (req, res) => {
+    try {
+      const users = await storage.getUsersByRole(req.params.role);
+      const usersWithoutPasswords = users.map(({ passwordHash, ...user }) => user);
+      res.json(usersWithoutPasswords);
+    } catch (error: any) {
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
@@ -485,6 +555,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Booking availability routes
+  app.get("/api/properties/:propertyId/availability", async (req, res) => {
+    try {
+      const { propertyId } = req.params;
+      const { startAt, endAt, excludeBookingId } = req.query;
+      
+      if (!startAt || !endAt) {
+        return res.status(400).json({ error: "startAt and endAt are required" });
+      }
+
+      const startDate = new Date(startAt as string);
+      const endDate = new Date(endAt as string);
+      
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({ error: "Invalid date format" });
+      }
+
+      const isAvailable = await storage.isPropertyAvailable(
+        propertyId, 
+        startDate, 
+        endDate, 
+        excludeBookingId as string
+      );
+      
+      res.json({ available: isAvailable });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/properties/:propertyId/bookings", async (req, res) => {
+    try {
+      const { propertyId } = req.params;
+      const { startAt, endAt } = req.query;
+      
+      const startDate = startAt ? new Date(startAt as string) : undefined;
+      const endDate = endAt ? new Date(endAt as string) : undefined;
+      
+      const bookings = await storage.getBookingsForProperty(propertyId, startDate, endDate);
+      res.json(bookings);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/properties/:propertyId/calculate-price", async (req, res) => {
+    try {
+      const { propertyId } = req.params;
+      const { startAt, endAt } = req.body;
+      
+      if (!startAt || !endAt) {
+        return res.status(400).json({ error: "startAt and endAt are required" });
+      }
+
+      const startDate = new Date(startAt);
+      const endDate = new Date(endAt);
+      
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({ error: "Invalid date format" });
+      }
+
+      const priceCalculation = await storage.calculateBookingPrice(propertyId, startDate, endDate);
+      
+      if (!priceCalculation) {
+        return res.status(400).json({ error: "Unable to calculate price for this booking" });
+      }
+      
+      res.json(priceCalculation);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 

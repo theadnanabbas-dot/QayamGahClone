@@ -6,7 +6,13 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
+  role: text("role").notNull().default("customer"), // "admin", "property_owner", "customer"
+  fullName: text("full_name"),
+  phone: text("phone"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
 export const cities = pgTable("cities", {
@@ -84,14 +90,20 @@ export const testimonials = pgTable("testimonials", {
   rating: integer("rating").notNull().default(5),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
   passwordHash: true,
+  isActive: true,
+  createdAt: true,
 }).extend({
   // For registration, we'll accept plain password and hash it in the backend
   password: z.string().min(6),
-}).omit({
-  passwordHash: true,
+  role: z.enum(["admin", "property_owner", "customer"]).default("customer"),
+});
+
+export const loginUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
 });
 
 export const insertCitySchema = createInsertSchema(cities).omit({
@@ -124,10 +136,17 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({
   status: z.enum(["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"]).default("PENDING"),
   startAt: z.coerce.date(),
   endAt: z.coerce.date(),
+  currency: z.string().default("PKR"), // Pakistani Rupee
+});
+
+export const updateBookingStatusSchema = z.object({
+  id: z.string(),
+  status: z.enum(["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"]),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type LoginUser = z.infer<typeof loginUserSchema>;
 
 export type InsertCity = z.infer<typeof insertCitySchema>;
 export type City = typeof cities.$inferSelect;

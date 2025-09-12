@@ -282,24 +282,24 @@ export default function PropertyListing() {
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(property =>
-        property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        property.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        property.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        property.city.toLowerCase().includes(searchTerm.toLowerCase())
+        property.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        property.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        property.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        property.city?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // City filter
     if (cityFilter && cityFilter !== "all") {
       filtered = filtered.filter(property => 
-        property.city.toLowerCase().includes(cityFilter.toLowerCase())
+        property.city?.toLowerCase().includes(cityFilter.toLowerCase())
       );
     }
 
     // Category filter
     if (categoryFilter && categoryFilter !== "all") {
       filtered = filtered.filter(property => 
-        property.category.toLowerCase().includes(categoryFilter.toLowerCase())
+        property.category?.toLowerCase().includes(categoryFilter.toLowerCase())
       );
     }
 

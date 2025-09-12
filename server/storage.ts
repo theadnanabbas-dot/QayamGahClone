@@ -1,6 +1,7 @@
 import { 
   type User, 
   type InsertUser,
+  type LoginUser,
   type City,
   type InsertCity,
   type PropertyCategory,
@@ -23,9 +24,12 @@ export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
   deleteUser(id: string): Promise<boolean>;
+  getAllUsers(): Promise<User[]>;
+  getUsersByRole(role: string): Promise<User[]>;
   
   // Cities
   getCities(): Promise<City[]>;
@@ -109,17 +113,37 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.email === email,
+    );
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
     // Hash the password (in a real app, use bcrypt)
     const passwordHash = `hashed_${insertUser.password}`;
     const user: User = { 
       id, 
-      username: insertUser.username, 
-      passwordHash 
+      username: insertUser.username,
+      email: insertUser.email,
+      passwordHash,
+      role: insertUser.role || "customer",
+      fullName: insertUser.fullName || null,
+      phone: insertUser.phone || null,
+      isActive: true,
+      createdAt: new Date()
     };
     this.users.set(id, user);
     return user;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
+  async getUsersByRole(role: string): Promise<User[]> {
+    return Array.from(this.users.values()).filter(user => user.role === role);
   }
 
   // Cities
@@ -354,6 +378,10 @@ export class MemStorage implements IStorage {
     const updatedUser: User = { 
       ...user, 
       username: updates.username ?? user.username,
+      email: updates.email ?? user.email,
+      fullName: updates.fullName !== undefined ? updates.fullName : user.fullName,
+      phone: updates.phone !== undefined ? updates.phone : user.phone,
+      role: updates.role ?? user.role,
       passwordHash: updates.password ? `hashed_${updates.password}` : user.passwordHash
     };
     this.users.set(id, updatedUser);

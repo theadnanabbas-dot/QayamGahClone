@@ -8,6 +8,7 @@ import Homepage from "@/pages/homepage";
 import PropertyListing from "@/pages/property-listing";
 import PropertyDetails from "@/pages/property-details";
 import HotelsListing from "@/pages/hotels-listing";
+import AdminPanel from "@/pages/admin-panel";
 
 function Router() {
   return (
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/property" component={PropertyListing} />
       <Route path="/property-details/:slug" component={PropertyDetails} />
       <Route path="/hotels" component={HotelsListing} />
+      <Route path="/admin" component={AdminPanel} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { MapPin, Star, Wifi, Car, Coffee, Tv, Bath, Bed, Clock, Phone, Calendar, Users } from "lucide-react";
 import { Link, useRoute } from "wouter";
+import CalendarBooking from "@/components/calendar-booking";
 
 // Types from our schema
 interface Property {
@@ -14,8 +15,8 @@ interface Property {
   description: string;
   address: string;
   city: string;
-  pricePerHour: number;
-  rating: number;
+  pricePerHour: string;
+  rating: string;
   images: string[];
   isNew: boolean;
   isFeatured: boolean;
@@ -24,6 +25,8 @@ interface Property {
   latitude: string;
   longitude: string;
   ownerId: string;
+  minHours?: number;
+  maxGuests?: number;
 }
 
 // Header Component
@@ -90,75 +93,19 @@ function getAmenityIcon(amenity: string) {
   return Users; // Default icon
 }
 
-// Booking Form Component
-function BookingForm({ property }: { property: Property }) {
+// Legacy Booking Form Component (replaced by CalendarBooking)
+function LegacyBookingForm({ property }: { property: Property }) {
   return (
-    <Card className="sticky top-8" data-testid="card-booking-form">
-      <CardContent className="p-6">
-        <div className="text-center mb-6">
-          <div className="text-3xl font-bold text-primary mb-2" data-testid="text-booking-price">
-            Rs. {property.pricePerHour}
-          </div>
-          <div className="text-gray-600 dark:text-gray-400">per hour</div>
-        </div>
-        
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Check In
-              </label>
-              <input 
-                type="datetime-local" 
-                className="w-full p-3 border border-gray-300 rounded-md"
-                data-testid="input-checkin"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Duration
-              </label>
-              <select className="w-full p-3 border border-gray-300 rounded-md" data-testid="select-duration">
-                <option value="2">2 Hours</option>
-                <option value="4">4 Hours</option>
-                <option value="6">6 Hours</option>
-                <option value="8">8 Hours</option>
-                <option value="12">12 Hours</option>
-                <option value="24">24 Hours</option>
-              </select>
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Guests
-            </label>
-            <select className="w-full p-3 border border-gray-300 rounded-md" data-testid="select-guests">
-              <option value="1">1 Guest</option>
-              <option value="2">2 Guests</option>
-              <option value="3">3 Guests</option>
-              <option value="4">4 Guests</option>
-              <option value="5">5+ Guests</option>
-            </select>
-          </div>
-          
-          <Button className="w-full bg-primary hover:bg-primary/90" size="lg" data-testid="button-book-now">
-            Book Now
-          </Button>
-          
-          <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-            <div className="flex items-center justify-center gap-1 mb-2">
-              <Phone className="h-4 w-4" />
-              <span>Call for instant booking: +92-21-1234567</span>
-            </div>
-            <div className="flex items-center justify-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span>Available 24/7</span>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
+      <div className="flex items-center justify-center gap-1 mb-2">
+        <Phone className="h-4 w-4" />
+        <span>Call for instant booking: +92-21-1234567</span>
+      </div>
+      <div className="flex items-center justify-center gap-1">
+        <Clock className="h-4 w-4" />
+        <span>Available 24/7</span>
+      </div>
+    </div>
   );
 }
 
@@ -338,7 +285,19 @@ export default function PropertyDetails() {
 
           {/* Booking Sidebar */}
           <div className="lg:col-span-1">
-            <BookingForm property={property} />
+            <CalendarBooking 
+              property={{
+                id: property.id,
+                title: property.title,
+                pricePerHour: parseFloat(property.pricePerHour),
+                minHours: property.minHours || 2,
+                maxGuests: property.maxGuests || 4
+              }}
+              onBookingSuccess={(booking) => {
+                console.log('Booking created:', booking);
+              }}
+            />
+            <LegacyBookingForm property={property} />
           </div>
         </div>
 
