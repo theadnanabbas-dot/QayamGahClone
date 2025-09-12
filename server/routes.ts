@@ -12,6 +12,29 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Static image serving route - placeholder images
+  app.get("/api/images/*", (req, res) => {
+    const imagePath = req.path.replace("/api/images/", "");
+    
+    // Generate placeholder based on image type and path
+    let imageUrl = "https://picsum.photos/400/300";
+    
+    if (imagePath.includes("cities")) {
+      imageUrl = "https://picsum.photos/600/400"; // City images - wider format
+    } else if (imagePath.includes("properties")) {
+      imageUrl = "https://picsum.photos/800/600"; // Property images - larger format
+    } else if (imagePath.includes("categories")) {
+      imageUrl = "https://picsum.photos/300/200"; // Category icons - smaller format
+    } else if (imagePath.includes("testimonials")) {
+      imageUrl = "https://picsum.photos/100/100"; // Profile photos - square format
+    } else if (imagePath.includes("blog")) {
+      imageUrl = "https://picsum.photos/800/400"; // Blog images - wide format
+    }
+    
+    // Redirect to placeholder image
+    res.redirect(imageUrl);
+  });
+
   // User routes
   app.get("/api/users/:id", async (req, res) => {
     try {
