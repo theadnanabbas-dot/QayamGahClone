@@ -31,13 +31,25 @@ import {
 import { Link } from "wouter";
 import { z } from "zod";
 
-// Form schema
-const propertyFormSchema = insertPropertySchema.extend({
+// Form schema - simplified version
+const propertyFormSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  pricePerHour: z.string().min(1, "Price per hour is required"),
+  pricePerDay: z.string().optional(),
+  minHours: z.number().min(1),
+  maxGuests: z.number().min(1),
+  address: z.string().min(1, "Address is required"),
   latitude: z.string().optional(),
   longitude: z.string().optional(),
-  mainImage: z.string().min(1, "Main image is required"),
-  images: z.array(z.string()).default([]),
+  cityId: z.string().min(1, "City is required"),
+  categoryId: z.string().min(1, "Category is required"),
+  ownerId: z.string().min(1, "Owner ID is required"),
+  bedrooms: z.number().min(0),
+  bathrooms: z.number().min(0),
   amenities: z.array(z.string()).default([]),
+  images: z.array(z.string()).default([]),
+  mainImage: z.string().min(1, "Main image is required"),
 });
 
 type PropertyFormData = z.infer<typeof propertyFormSchema>;
@@ -287,13 +299,28 @@ export default function AddProperty() {
     }
   });
 
+  // Update ownerId when user is available
+  useEffect(() => {
+    if (user?.id) {
+      form.setValue("ownerId", user.id);
+    }
+  }, [user, form]);
+
   // Create property mutation
   const createPropertyMutation = useMutation({
     mutationFn: async (data: PropertyFormData) => {
-      return apiRequest(`/api/properties`, {
+      const response = await fetch(`/api/properties`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(data)
       });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create property");
+      }
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -333,16 +360,23 @@ export default function AddProperty() {
     }
 
     const propertyData = {
-      ...data,
+      title: data.title,
+      description: data.description || "",
+      pricePerHour: data.pricePerHour,
+      pricePerDay: data.pricePerDay || "",
+      minHours: data.minHours,
+      maxGuests: data.maxGuests,
+      address: mapLocation.address,
       latitude: mapLocation.lat.toString(),
       longitude: mapLocation.lng.toString(),
-      address: mapLocation.address,
+      cityId: data.cityId,
+      categoryId: data.categoryId,
+      ownerId: user.id,
+      bedrooms: data.bedrooms,
+      bathrooms: data.bathrooms,
+      amenities: selectedAmenities,
       images: selectedImages,
       mainImage: selectedImages[mainImageIndex],
-      amenities: selectedAmenities,
-      ownerId: user.id,
-      pricePerHour: parseFloat(data.pricePerHour).toString(),
-      pricePerDay: data.pricePerDay ? parseFloat(data.pricePerDay).toString() : undefined,
     };
 
     createPropertyMutation.mutate(propertyData);
