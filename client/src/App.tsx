@@ -10,6 +10,10 @@ import PropertyDetails from "@/pages/property-details";
 import HotelsListing from "@/pages/hotels-listing";
 import AdminPanel from "@/pages/admin-panel";
 import AdminLogin from "@/pages/admin-login";
+import PropertyOwnerLogin from "@/pages/property-owner-login";
+import PropertyOwnerDashboard from "@/pages/property-owner-dashboard";
+import CustomerLogin from "@/pages/customer-login";
+import CustomerDashboard from "@/pages/customer-dashboard";
 
 function Router() {
   return (
@@ -20,6 +24,10 @@ function Router() {
       <Route path="/hotels" component={HotelsListing} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" component={AdminPanel} />
+      <Route path="/property-owner/login" component={PropertyOwnerLogin} />
+      <Route path="/property-owner" component={PropertyOwnerDashboard} />
+      <Route path="/customer/login" component={CustomerLogin} />
+      <Route path="/customer" component={CustomerDashboard} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>

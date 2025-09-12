@@ -193,6 +193,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Property Owner login endpoint
+  app.post("/api/auth/property-owner-login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+      
+      // Demo property owner credentials
+      const demoOwnerEmail = "owner@qayamgah.com";
+      const demoOwnerPassword = "owner123";
+      
+      // Check for demo property owner credentials
+      if (email === demoOwnerEmail && password === demoOwnerPassword) {
+        const ownerUser = {
+          id: "owner-001",
+          email: demoOwnerEmail,
+          role: "property_owner",
+          fullName: "Property Owner Demo",
+          username: "propertyowner"
+        };
+        
+        // Generate a simple token (in production, use JWT)
+        const token = `owner_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        return res.json({ 
+          success: true, 
+          user: ownerUser,
+          token
+        });
+      }
+      
+      // Check database for property owner users
+      const user = await storage.getUserByEmail(email);
+      if (!user || user.role !== "property_owner") {
+        return res.status(401).json({ message: "Invalid property owner credentials" });
+      }
+
+      if (!user.isActive) {
+        return res.status(403).json({ message: "Property owner account is deactivated" });
+      }
+      
+      // Note: In a real app, you'd verify the hashed password here
+      if (user.passwordHash !== `hashed_${password}`) {
+        return res.status(401).json({ message: "Invalid property owner credentials" });
+      }
+      
+      // Generate a simple token (in production, use JWT)
+      const token = `owner_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      res.json({ 
+        success: true, 
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          fullName: user.fullName
+        },
+        token
+      });
+    } catch (error: any) {
+      console.error("Property owner login error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Customer login endpoint
+  app.post("/api/auth/customer-login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+      
+      // Demo customer credentials
+      const demoCustomerEmail = "customer@qayamgah.com";
+      const demoCustomerPassword = "customer123";
+      
+      // Check for demo customer credentials
+      if (email === demoCustomerEmail && password === demoCustomerPassword) {
+        const customerUser = {
+          id: "customer-001",
+          email: demoCustomerEmail,
+          role: "customer",
+          fullName: "Customer Demo",
+          username: "customer"
+        };
+        
+        // Generate a simple token (in production, use JWT)
+        const token = `customer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        return res.json({ 
+          success: true, 
+          user: customerUser,
+          token
+        });
+      }
+      
+      // Check database for customer users
+      const user = await storage.getUserByEmail(email);
+      if (!user || user.role !== "customer") {
+        return res.status(401).json({ message: "Invalid customer credentials" });
+      }
+
+      if (!user.isActive) {
+        return res.status(403).json({ message: "Customer account is deactivated" });
+      }
+      
+      // Note: In a real app, you'd verify the hashed password here
+      if (user.passwordHash !== `hashed_${password}`) {
+        return res.status(401).json({ message: "Invalid customer credentials" });
+      }
+      
+      // Generate a simple token (in production, use JWT)
+      const token = `customer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      res.json({ 
+        success: true, 
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          fullName: user.fullName
+        },
+        token
+      });
+    } catch (error: any) {
+      console.error("Customer login error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Admin routes
   app.get("/api/admin/users", async (req, res) => {
     try {
