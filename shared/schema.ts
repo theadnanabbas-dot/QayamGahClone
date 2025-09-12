@@ -119,8 +119,11 @@ export const insertTestimonialSchema = createInsertSchema(testimonials).omit({
 export const insertBookingSchema = createInsertSchema(bookings).omit({
   id: true,
   createdAt: true,
+  totalPrice: true, // Server will calculate this, don't accept from client
 }).extend({
   status: z.enum(["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"]).default("PENDING"),
+  startAt: z.coerce.date(),
+  endAt: z.coerce.date(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
