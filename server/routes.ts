@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
   insertUserSchema, 
+  updateUserSchema,
   loginUserSchema,
   insertCitySchema, 
   insertPropertyCategorySchema, 
@@ -64,7 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/users/:id", async (req, res) => {
     try {
-      const updates = insertUserSchema.partial().parse(req.body);
+      const updates = updateUserSchema.parse(req.body);
       const user = await storage.updateUser(req.params.id, updates);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
@@ -208,6 +209,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const users = await storage.getUsersByRole(req.params.role);
       const usersWithoutPasswords = users.map(({ passwordHash, ...user }) => user);
       res.json(usersWithoutPasswords);
+    } catch (error: any) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id/role", async (req, res) => {
+    try {
+      const { role } = req.body;
+      
+      if (!role) {
+        return res.status(400).json({ error: "Role is required" });
+      }
+
+      const validRoles = ["admin", "property_owner", "customer"];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ error: "Invalid role. Must be one of: admin, property_owner, customer" });
+      }
+
+      const user = await storage.updateUser(req.params.id, { role });
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const { passwordHash, ...userWithoutPassword } = user;
+      res.json({ 
+        message: "User role updated successfully", 
+        user: userWithoutPassword 
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id/status", async (req, res) => {
+    try {
+      const { isActive } = req.body;
+      
+      if (typeof isActive !== "boolean") {
+        return res.status(400).json({ error: "isActive must be a boolean value" });
+      }
+
+      const user = await storage.updateUser(req.params.id, { isActive });
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const { passwordHash, ...userWithoutPassword } = user;
+      res.json({ 
+        message: `User ${isActive ? 'activated' : 'deactivated'} successfully`, 
+        user: userWithoutPassword 
+      });
     } catch (error: any) {
       res.status(500).json({ error: "Internal server error" });
     }

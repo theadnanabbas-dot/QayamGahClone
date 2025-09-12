@@ -101,6 +101,15 @@ export const insertUserSchema = createInsertSchema(users).omit({
   role: z.enum(["admin", "property_owner", "customer"]).default("customer"),
 });
 
+export const updateUserSchema = createInsertSchema(users).omit({
+  id: true,
+  passwordHash: true,
+  createdAt: true,
+}).partial().extend({
+  role: z.enum(["admin", "property_owner", "customer"]).optional(),
+  isActive: z.boolean().optional(),
+});
+
 export const loginUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),

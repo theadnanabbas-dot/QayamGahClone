@@ -565,9 +565,89 @@ function PropertyManagement() {
 
 // User Management Tab
 function UserManagement() {
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"]
   });
+
+  // Update user role mutation
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+      const response = await fetch(`/api/admin/users/${userId}/role`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role })
+      });
+      if (!response.ok) throw new Error("Failed to update user role");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "User role updated successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setIsEditDialogOpen(false);
+      setEditingUser(null);
+    },
+    onError: () => {
+      toast({ title: "Failed to update user role", variant: "destructive" });
+    }
+  });
+
+  // Update user status mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ userId, isActive }: { userId: string; isActive: boolean }) => {
+      const response = await fetch(`/api/admin/users/${userId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive })
+      });
+      if (!response.ok) throw new Error("Failed to update user status");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: data.message });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to update user status", variant: "destructive" });
+    }
+  });
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateRole = (newRole: string) => {
+    if (editingUser) {
+      updateRoleMutation.mutate({ userId: editingUser.id, role: newRole });
+    }
+  };
+
+  const handleToggleStatus = (user: User) => {
+    updateStatusMutation.mutate({ userId: user.id, isActive: !user.isActive });
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case "admin": return "bg-purple-500 hover:bg-purple-600";
+      case "property_owner": return "bg-blue-500 hover:bg-blue-600";
+      case "customer": return "bg-gray-500 hover:bg-gray-600";
+      default: return "bg-gray-500";
+    }
+  };
+
+  const getRoleDisplayName = (role: string) => {
+    switch (role) {
+      case "property_owner": return "Property Owner";
+      case "admin": return "Admin";
+      case "customer": return "Customer";
+      default: return role;
+    }
+  };
 
   if (isLoading) {
     return (
@@ -581,11 +661,70 @@ function UserManagement() {
     <div className="space-y-6" data-testid="user-management">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">User Management</h2>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-600">Total Users:</span>
-          <Badge variant="secondary">{users.length}</Badge>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Total Users:</span>
+            <Badge variant="secondary">{users.length}</Badge>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Admins:</span>
+            <Badge className="bg-purple-500">{users.filter(u => u.role === "admin").length}</Badge>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Property Owners:</span>
+            <Badge className="bg-blue-500">{users.filter(u => u.role === "property_owner").length}</Badge>
+          </div>
         </div>
       </div>
+
+      {/* Edit User Role Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent data-testid="edit-user-dialog">
+          <DialogHeader>
+            <DialogTitle>Edit User Role</DialogTitle>
+            <DialogDescription>
+              Change the role for {editingUser?.fullName || editingUser?.username}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Current Role:</label>
+              <Badge className={getRoleColor(editingUser?.role || "")}>
+                {getRoleDisplayName(editingUser?.role || "")}
+              </Badge>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">New Role:</label>
+              <Select 
+                defaultValue={editingUser?.role} 
+                onValueChange={handleUpdateRole}
+                data-testid="select-user-role"
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select new role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="customer">Customer</SelectItem>
+                  <SelectItem value="property_owner">Property Owner</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEditDialogOpen(false)}
+              data-testid="button-cancel-role-edit"
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardContent className="p-0">
@@ -619,27 +758,43 @@ function UserManagement() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        className={
-                          user.role === "admin" ? "bg-purple-500" :
-                          user.role === "property_owner" ? "bg-blue-500" :
-                          "bg-gray-500"
-                        }
-                      >
-                        {user.role}
+                      <Badge className={getRoleColor(user.role)}>
+                        {getRoleDisplayName(user.role)}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={user.isActive ? "bg-green-500" : "bg-red-500"}>
-                        {user.isActive ? "Active" : "Inactive"}
-                      </Badge>
+                      <div className="flex items-center space-x-2">
+                        <Badge className={user.isActive ? "bg-green-500" : "bg-red-500"}>
+                          {user.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleToggleStatus(user)}
+                          disabled={updateStatusMutation.isPending}
+                          className="h-6 w-6 p-0"
+                          data-testid={`button-toggle-status-${user.id}`}
+                        >
+                          {user.isActive ? (
+                            <XCircle className="h-3 w-3 text-red-500" />
+                          ) : (
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                          )}
+                        </Button>
+                      </div>
                     </TableCell>
                     <TableCell>
                       {format(new Date(user.createdAt), "MMM dd, yyyy")}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <Button size="sm" variant="outline" data-testid={`button-edit-user-${user.id}`}>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEditUser(user)}
+                          disabled={updateRoleMutation.isPending}
+                          data-testid={`button-edit-user-${user.id}`}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                       </div>
