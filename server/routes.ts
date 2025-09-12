@@ -123,6 +123,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin authentication route
+  app.post("/api/auth/admin-login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+      
+      // Demo admin credentials
+      const demoAdminEmail = "admin@qayamgah.com";
+      const demoAdminPassword = "admin123";
+      
+      // Check for demo admin credentials
+      if (email === demoAdminEmail && password === demoAdminPassword) {
+        const adminUser = {
+          id: "admin-001",
+          email: demoAdminEmail,
+          role: "admin",
+          fullName: "System Administrator",
+          username: "admin"
+        };
+        
+        // Generate a simple token (in production, use JWT)
+        const token = `admin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        return res.json({ 
+          success: true, 
+          user: adminUser,
+          token
+        });
+      }
+      
+      // Check database for admin users
+      const user = await storage.getUserByEmail(email);
+      if (!user || user.role !== "admin") {
+        return res.status(401).json({ message: "Invalid admin credentials" });
+      }
+
+      if (!user.isActive) {
+        return res.status(403).json({ message: "Admin account is deactivated" });
+      }
+      
+      // Note: In a real app, you'd verify the hashed password here
+      // For demo purposes, we'll accept the correct password format
+      if (user.passwordHash !== `hashed_${password}`) {
+        return res.status(401).json({ message: "Invalid admin credentials" });
+      }
+      
+      // Generate a simple token (in production, use JWT)
+      const token = `admin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      res.json({ 
+        success: true, 
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          fullName: user.fullName
+        },
+        token
+      });
+    } catch (error: any) {
+      console.error("Admin login error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Admin routes
   app.get("/api/admin/users", async (req, res) => {
     try {
