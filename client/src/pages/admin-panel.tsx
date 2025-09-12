@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,10 +25,11 @@ import {
   MapPin,
   DollarSign,
   Star,
-  Loader2
+  Loader2,
+  LogOut
 } from "lucide-react";
 import { format } from "date-fns";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 // Types
 interface User {
@@ -80,7 +81,7 @@ interface City {
 }
 
 // Header Component
-function AdminHeader() {
+function AdminHeader({ user, onLogout }: { user: any; onLogout: () => void }) {
   return (
     <header className="bg-white dark:bg-gray-900 shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -92,10 +93,23 @@ function AdminHeader() {
           </div>
           
           <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline">{user?.role || "Admin"}</Badge>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {user?.fullName || user?.email || "Administrator"}
+              </span>
+            </div>
             <Link href="/" data-testid="link-public-site">
               <Button variant="outline">View Public Site</Button>
             </Link>
-            <Badge variant="secondary">Admin Panel</Badge>
+            <Button 
+              variant="outline" 
+              onClick={onLogout}
+              data-testid="button-logout"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
           </div>
         </div>
       </div>
@@ -642,9 +656,73 @@ function UserManagement() {
 }
 
 export default function AdminPanel() {
+  const [, setLocation] = useLocation();
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem("admin_token");
+      const userData = localStorage.getItem("admin_user");
+      
+      if (!token || !userData) {
+        // No authentication, redirect to login
+        setLocation("/admin/login");
+        return;
+      }
+      
+      try {
+        const parsedUser = JSON.parse(userData);
+        if (parsedUser.role !== "admin") {
+          // Not an admin, redirect to login
+          localStorage.removeItem("admin_token");
+          localStorage.removeItem("admin_user");
+          setLocation("/admin/login");
+          return;
+        }
+        
+        setUser(parsedUser);
+      } catch (error) {
+        // Invalid user data, redirect to login
+        localStorage.removeItem("admin_token");
+        localStorage.removeItem("admin_user");
+        setLocation("/admin/login");
+        return;
+      }
+      
+      setIsLoading(false);
+    };
+
+    checkAuth();
+  }, [setLocation]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_user");
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out."
+    });
+    setLocation("/admin/login");
+  };
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <AdminHeader />
+      <AdminHeader user={user} onLogout={handleLogout} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
