@@ -413,6 +413,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Property creation endpoint
+  app.post("/api/properties", async (req, res) => {
+    try {
+      const propertyData = insertPropertySchema.parse(req.body);
+      
+      // Generate slug from title
+      const slug = propertyData.title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+      
+      const propertyWithSlug = { ...propertyData, slug };
+      const property = await storage.createProperty(propertyWithSlug);
+      
+      res.status(201).json({ 
+        message: "Property created successfully", 
+        property 
+      });
+    } catch (error: any) {
+      if (error.code === "23505") { // Unique constraint violation
+        res.status(409).json({ error: "Property with this title already exists" });
+      } else {
+        console.error("Property creation error:", error);
+        res.status(400).json({ error: error.message || "Invalid property data" });
+      }
+    }
+  });
+
   // City routes
   app.get("/api/cities", async (req, res) => {
     try {

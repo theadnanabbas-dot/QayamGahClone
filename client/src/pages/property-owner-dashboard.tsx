@@ -110,10 +110,12 @@ function PropertiesManagement({ ownerId }: { ownerId: string }) {
     <div className="space-y-6" data-testid="properties-management">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">My Properties</h2>
-        <Button className="bg-blue-600 hover:bg-blue-700" data-testid="button-add-property">
-          <Plus className="h-4 w-4 mr-2" />
-          Add New Property
-        </Button>
+        <Link href="/property-owner/add-property" data-testid="link-add-property">
+          <Button className="bg-blue-600 hover:bg-blue-700" data-testid="button-add-property">
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Property
+          </Button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -166,10 +168,12 @@ function PropertiesManagement({ ownerId }: { ownerId: string }) {
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             Start by adding your first property to begin receiving bookings.
           </p>
-          <Button className="bg-blue-600 hover:bg-blue-700" data-testid="button-add-first-property">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Your First Property
-          </Button>
+          <Link href="/property-owner/add-property" data-testid="link-add-first-property">
+            <Button className="bg-blue-600 hover:bg-blue-700" data-testid="button-add-first-property">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Your First Property
+            </Button>
+          </Link>
         </Card>
       )}
     </div>

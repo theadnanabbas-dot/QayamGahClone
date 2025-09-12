@@ -14,6 +14,7 @@ import PropertyOwnerLogin from "@/pages/property-owner-login";
 import PropertyOwnerDashboard from "@/pages/property-owner-dashboard";
 import CustomerLogin from "@/pages/customer-login";
 import CustomerDashboard from "@/pages/customer-dashboard";
+import AddProperty from "@/pages/add-property";
 
 function Router() {
   return (
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" component={AdminPanel} />
       <Route path="/property-owner/login" component={PropertyOwnerLogin} />
+      <Route path="/property-owner/add-property" component={AddProperty} />
       <Route path="/property-owner" component={PropertyOwnerDashboard} />
       <Route path="/customer/login" component={CustomerLogin} />
       <Route path="/customer" component={CustomerDashboard} />
