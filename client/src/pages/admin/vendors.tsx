@@ -967,6 +967,9 @@ interface Vendor {
 
 function VendorsContent() {
   const [showVendorModal, setShowVendorModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   
   const { data: vendors = [], isLoading: vendorsLoading } = useQuery<Vendor[]>({
     queryKey: ["/api/vendors"]
@@ -981,6 +984,27 @@ function VendorsContent() {
   });
 
   const { toast } = useToast();
+
+  // Modal management functions
+  const handleViewVendor = (vendor: Vendor) => {
+    setSelectedVendor(vendor);
+    setShowViewModal(true);
+  };
+
+  const handleEditVendor = (vendor: Vendor) => {
+    setSelectedVendor(vendor);
+    setShowEditModal(true);
+  };
+
+  const closeViewModal = () => {
+    setShowViewModal(false);
+    setSelectedVendor(null);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setSelectedVendor(null);
+  };
 
   // Status update mutation
   const statusUpdateMutation = useMutation({
@@ -1252,11 +1276,23 @@ function VendorsContent() {
                   
                   {/* View/Edit Actions */}
                   <div className="flex items-center space-x-2">
-                    <Button size="sm" variant="outline" className="flex-1" data-testid={`button-view-${vendor.id}`}>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1" 
+                      onClick={() => handleViewVendor(vendor)}
+                      data-testid={`button-view-${vendor.id}`}
+                    >
                       <Eye className="h-3 w-3 mr-1" />
                       View
                     </Button>
-                    <Button size="sm" variant="outline" className="flex-1" data-testid={`button-edit-${vendor.id}`}>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1" 
+                      onClick={() => handleEditVendor(vendor)}
+                      data-testid={`button-edit-${vendor.id}`}
+                    >
                       <Edit className="h-3 w-3 mr-1" />
                       Edit
                     </Button>
@@ -1335,6 +1371,22 @@ function VendorsContent() {
       <VendorRegistrationModal 
         isOpen={showVendorModal}
         onClose={() => setShowVendorModal(false)}
+      />
+
+      {/* View Vendor Modal */}
+      <ViewVendorModal 
+        isOpen={showViewModal}
+        onClose={closeViewModal}
+        vendor={selectedVendor}
+        user={selectedVendor ? getUserForVendor(selectedVendor.userId) : null}
+      />
+
+      {/* Edit Vendor Modal */}
+      <EditVendorModal 
+        isOpen={showEditModal}
+        onClose={closeEditModal}
+        vendor={selectedVendor}
+        user={selectedVendor ? getUserForVendor(selectedVendor.userId) : null}
       />
     </div>
   );
