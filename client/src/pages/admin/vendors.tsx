@@ -752,8 +752,12 @@ function VendorsContent() {
                           disabled={statusUpdateMutation.isPending}
                           data-testid={`button-approve-${vendor.id}`}
                         >
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Approve
+                          {statusUpdateMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          ) : (
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                          )}
+                          {statusUpdateMutation.isPending ? 'Approving...' : 'Approve'}
                         </Button>
                         <Button 
                           size="sm" 
@@ -763,8 +767,12 @@ function VendorsContent() {
                           disabled={statusUpdateMutation.isPending}
                           data-testid={`button-reject-${vendor.id}`}
                         >
-                          <X className="h-3 w-3 mr-1" />
-                          Reject
+                          {statusUpdateMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          ) : (
+                            <X className="h-3 w-3 mr-1" />
+                          )}
+                          {statusUpdateMutation.isPending ? 'Rejecting...' : 'Reject'}
                         </Button>
                       </>
                     )}
@@ -778,8 +786,12 @@ function VendorsContent() {
                         disabled={statusUpdateMutation.isPending}
                         data-testid={`button-deactivate-${vendor.id}`}
                       >
-                        <X className="h-3 w-3 mr-1" />
-                        Deactivate
+                        {statusUpdateMutation.isPending ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : (
+                          <X className="h-3 w-3 mr-1" />
+                        )}
+                        {statusUpdateMutation.isPending ? 'Deactivating...' : 'Deactivate'}
                       </Button>
                     )}
                     
@@ -791,8 +803,12 @@ function VendorsContent() {
                         disabled={statusUpdateMutation.isPending}
                         data-testid={`button-reactivate-${vendor.id}`}
                       >
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Reactivate
+                        {statusUpdateMutation.isPending ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : (
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                        )}
+                        {statusUpdateMutation.isPending ? 'Reactivating...' : 'Reactivate'}
                       </Button>
                     )}
                   </div>

@@ -88,6 +88,7 @@ export interface IStorage {
   getVendors(): Promise<Vendor[]>;
   getVendor(id: string): Promise<Vendor | undefined>;
   getVendorByUserId(userId: string): Promise<Vendor | undefined>;
+  getVendorByEmail(email: string): Promise<Vendor | undefined>;
   createVendor(vendor: InsertVendor): Promise<Vendor>;
   updateVendorStatus(id: string, status: string): Promise<Vendor | undefined>;
   deleteVendor(id: string): Promise<boolean>;
@@ -622,6 +623,12 @@ export class MemStorage implements IStorage {
   async getVendorByUserId(userId: string): Promise<Vendor | undefined> {
     return Array.from(this.vendors.values()).find(
       (vendor) => vendor.userId === userId,
+    );
+  }
+
+  async getVendorByEmail(email: string): Promise<Vendor | undefined> {
+    return Array.from(this.vendors.values()).find(
+      (vendor) => vendor.email === email,
     );
   }
 

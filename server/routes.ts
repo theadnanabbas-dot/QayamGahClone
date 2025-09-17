@@ -236,22 +236,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check database for property owner users
-      const user = await storage.getUserByEmail(email);
-      if (!user || user.role !== "property_owner") {
+      // Check vendors table for property owner authentication
+      const vendor = await storage.getVendorByEmail(email);
+      if (!vendor) {
         return res
           .status(401)
           .json({ message: "Invalid property owner credentials" });
       }
 
-      if (!user.isActive) {
+      // Only approved vendors can log in
+      if (vendor.status !== "approved") {
         return res
           .status(403)
-          .json({ message: "Property owner account is deactivated" });
+          .json({ message: "Your account is pending approval. Please contact the administrator." });
       }
 
       // Note: In a real app, you'd verify the hashed password here
-      if (user.passwordHash !== `hashed_${password}`) {
+      // For now, we'll use a simple password check
+      const expectedPassword = "owner123"; // In production, this would be properly hashed
+      if (password !== expectedPassword) {
         return res
           .status(401)
           .json({ message: "Invalid property owner credentials" });
@@ -263,11 +266,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          fullName: user.fullName,
+          id: vendor.id,
+          email: vendor.email,
+          role: "property_owner",
+          fullName: vendor.fullName,
+          businessName: vendor.businessName,
+          status: vendor.status
         },
         token,
       });
@@ -411,8 +415,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Vendor routes
-  app.get("/api/vendors", async (req, res) => {
+  // Admin authentication middleware
+  const requireAdminAuth = (req: any, res: any, next: any) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    const token = authHeader.substring(7);
+    // In a real app, verify JWT token here. For demo, check token format
+    if (!token.startsWith('admin_')) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
+    next();
+  };
+
+  // Vendor routes - Protected with admin authentication
+  app.get("/api/vendors", requireAdminAuth, async (req, res) => {
     try {
       const vendors = await storage.getVendors();
       res.json(vendors);
@@ -431,7 +451,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/vendors/:id/status", async (req, res) => {
+  app.patch("/api/vendors/:id/status", requireAdminAuth, async (req, res) => {
     try {
       const { status } = updateVendorStatusSchema.parse({
         id: req.params.id,
