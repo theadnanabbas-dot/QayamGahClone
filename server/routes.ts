@@ -12,6 +12,8 @@ import {
   insertTestimonialSchema,
   insertBookingSchema,
   updateBookingStatusSchema,
+  insertVendorSchema,
+  updateVendorStatusSchema,
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -406,6 +408,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Vendor routes
+  app.get("/api/vendors", async (req, res) => {
+    try {
+      const vendors = await storage.getVendors();
+      res.json(vendors);
+    } catch (error: any) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/vendors", async (req, res) => {
+    try {
+      const vendorData = insertVendorSchema.parse(req.body);
+      const vendor = await storage.createVendor(vendorData);
+      res.status(201).json(vendor);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/vendors/:id/status", async (req, res) => {
+    try {
+      const { status } = updateVendorStatusSchema.parse({
+        id: req.params.id,
+        status: req.body.status,
+      });
+      
+      const vendor = await storage.updateVendorStatus(req.params.id, status);
+      if (!vendor) {
+        return res.status(404).json({ error: "Vendor not found" });
+      }
+
+      // If vendor is approved, update user role to property_owner and activate account
+      if (status === "approved") {
+        // Update user role first
+        await storage.updateUser(vendor.userId, { role: "property_owner" });
+        // Then update user status separately
+        await storage.updateUser(vendor.userId, { isActive: true });
+      }
+
+      res.json({
+        message: "Vendor status updated successfully",
+        vendor,
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Vendor registration route - combined signup and profile creation
+  app.post("/api/vendor/register", async (req, res) => {
+    try {
+      const { email, password, ...vendorInfo } = req.body;
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ error: "User with this email already exists" });
+      }
+
+      // Create user account with property_owner role but inactive
+      const userData = insertUserSchema.parse({
+        email,
+        password,
+        role: "property_owner",
+        username: email, // Use email as username for now
+        fullName: `${vendorInfo.firstName} ${vendorInfo.lastName}`,
+        phone: vendorInfo.phoneNo1,
+      });
+
+      const user = await storage.createUser(userData);
+      
+      // Update user to be inactive until approved
+      await storage.updateUser(user.id, { isActive: false });
+
+      // Create vendor profile
+      const vendorData = insertVendorSchema.parse({
+        ...vendorInfo,
+        userId: user.id,
+      });
+
+      const vendor = await storage.createVendor(vendorData);
+
+      res.status(201).json({
+        message: "Vendor registration successful. Pending approval.",
+        vendor,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive,
+        },
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
     }
   });
 
