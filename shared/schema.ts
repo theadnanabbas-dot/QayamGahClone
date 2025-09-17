@@ -67,6 +67,7 @@ export const bookings = pgTable("bookings", {
   endAt: timestamp("end_at").notNull(),
   totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
   currency: text("currency").notNull().default("USD"),
+  paymentMethod: text("payment_method").notNull().default("cash"), // "cash", "card", "bank_transfer", "jazzcash", "easypaisa"
   status: text("status").notNull().default("PENDING"), // "PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
@@ -143,6 +144,7 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({
   totalPrice: true, // Server will calculate this, don't accept from client
 }).extend({
   status: z.enum(["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"]).default("PENDING"),
+  paymentMethod: z.enum(["cash", "card", "bank_transfer", "jazzcash", "easypaisa"]).default("cash"),
   startAt: z.coerce.date(),
   endAt: z.coerce.date(),
   currency: z.string().default("PKR"), // Pakistani Rupee
