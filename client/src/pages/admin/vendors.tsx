@@ -21,7 +21,9 @@ import {
   Edit,
   Plus,
   Loader2,
-  EyeOff
+  EyeOff,
+  X,
+  CheckCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -510,9 +512,29 @@ function VendorRegistrationModal({
   );
 }
 
+interface Vendor {
+  id: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  phoneNo1: string;
+  phoneNo2: string | null;
+  cnic: string;
+  address: string;
+  city: string;
+  country: string;
+  status: string;
+  createdAt: string;
+  approvedAt: string | null;
+}
+
 function VendorsContent() {
   const [showVendorModal, setShowVendorModal] = useState(false);
   
+  const { data: vendors = [], isLoading: vendorsLoading } = useQuery<Vendor[]>({
+    queryKey: ["/api/vendors"]
+  });
+
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"]
   });
@@ -521,8 +543,35 @@ function VendorsContent() {
     queryKey: ["/api/properties"]
   });
 
-  // Filter property owners (vendors)
-  const vendors = users.filter(user => user.role === "property_owner");
+  const { toast } = useToast();
+
+  // Status update mutation
+  const statusUpdateMutation = useMutation({
+    mutationFn: async ({ vendorId, status }: { vendorId: string; status: string }) => {
+      const response = await apiRequest("PATCH", `/api/vendors/${vendorId}/status`, { status });
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success!",
+        description: "Vendor status updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update vendor status.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Get user info for vendor
+  const getUserForVendor = (userId: string) => {
+    return users.find(user => user.id === userId);
+  };
 
   // Get properties by vendor
   const getVendorProperties = (vendorId: string) => {
@@ -584,8 +633,9 @@ function VendorsContent() {
       {/* Vendors Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {vendors.length > 0 ? vendors.map((vendor) => {
-          const stats = getVendorStats(vendor.id);
-          const vendorProperties = getVendorProperties(vendor.id);
+          const stats = getVendorStats(vendor.userId);
+          const vendorProperties = getVendorProperties(vendor.userId);
+          const user = getUserForVendor(vendor.userId);
           
           return (
             <Card key={vendor.id} className="hover:shadow-lg transition-shadow" data-testid={`vendor-card-${vendor.id}`}>
@@ -593,20 +643,26 @@ function VendorsContent() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                      {vendor.fullName || vendor.username}
+                      {`${vendor.firstName} ${vendor.lastName}`}
                     </CardTitle>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      @{vendor.username}
+                      {vendor.phoneNo1}
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-                      {vendor.email}
+                      {user?.email || "No email"}
                     </p>
                   </div>
                   <Badge 
-                    variant={vendor.isActive ? "default" : "secondary"}
-                    className={vendor.isActive ? "bg-green-500 hover:bg-green-600" : ""}
+                    variant={vendor.status === "approved" ? "default" : vendor.status === "pending" ? "secondary" : "destructive"}
+                    className={
+                      vendor.status === "approved" 
+                        ? "bg-green-500 hover:bg-green-600" 
+                        : vendor.status === "pending"
+                        ? "bg-yellow-500 hover:bg-yellow-600"
+                        : "bg-red-500 hover:bg-red-600"
+                    }
                   >
-                    {vendor.isActive ? "Active" : "Inactive"}
+                    {vendor.status.charAt(0).toUpperCase() + vendor.status.slice(1)}
                   </Badge>
                 </div>
               </CardHeader>
@@ -684,15 +740,74 @@ function VendorsContent() {
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center space-x-2 mt-4 pt-3 border-t">
-                  <Button size="sm" variant="outline" className="flex-1" data-testid={`button-view-${vendor.id}`}>
-                    <Eye className="h-3 w-3 mr-1" />
-                    View
-                  </Button>
-                  <Button size="sm" variant="outline" className="flex-1" data-testid={`button-edit-${vendor.id}`}>
-                    <Edit className="h-3 w-3 mr-1" />
-                    Edit
-                  </Button>
+                <div className="mt-4 pt-3 border-t">
+                  {/* Status Actions */}
+                  <div className="flex items-center space-x-2 mb-2">
+                    {vendor.status === "pending" && (
+                      <>
+                        <Button 
+                          size="sm" 
+                          className="flex-1 bg-green-600 hover:bg-green-700"
+                          onClick={() => statusUpdateMutation.mutate({ vendorId: vendor.id, status: "approved" })}
+                          disabled={statusUpdateMutation.isPending}
+                          data-testid={`button-approve-${vendor.id}`}
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Approve
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          className="flex-1"
+                          onClick={() => statusUpdateMutation.mutate({ vendorId: vendor.id, status: "rejected" })}
+                          disabled={statusUpdateMutation.isPending}
+                          data-testid={`button-reject-${vendor.id}`}
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Reject
+                        </Button>
+                      </>
+                    )}
+                    
+                    {vendor.status === "approved" && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => statusUpdateMutation.mutate({ vendorId: vendor.id, status: "rejected" })}
+                        disabled={statusUpdateMutation.isPending}
+                        data-testid={`button-deactivate-${vendor.id}`}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Deactivate
+                      </Button>
+                    )}
+                    
+                    {vendor.status === "rejected" && (
+                      <Button 
+                        size="sm" 
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        onClick={() => statusUpdateMutation.mutate({ vendorId: vendor.id, status: "approved" })}
+                        disabled={statusUpdateMutation.isPending}
+                        data-testid={`button-reactivate-${vendor.id}`}
+                      >
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Reactivate
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {/* View/Edit Actions */}
+                  <div className="flex items-center space-x-2">
+                    <Button size="sm" variant="outline" className="flex-1" data-testid={`button-view-${vendor.id}`}>
+                      <Eye className="h-3 w-3 mr-1" />
+                      View
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex-1" data-testid={`button-edit-${vendor.id}`}>
+                      <Edit className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -736,10 +851,10 @@ function VendorsContent() {
               </div>
               <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                 <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {vendors.filter(v => v.isActive).length}
+                  {vendors.filter(v => v.status === "approved").length}
                 </div>
                 <div className="text-sm text-green-600 dark:text-green-400">
-                  Active Vendors
+                  Approved Vendors
                 </div>
               </div>
               <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
