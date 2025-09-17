@@ -26,7 +26,11 @@ import {
   DollarSign,
   Star,
   Loader2,
-  LogOut
+  LogOut,
+  LayoutDashboard,
+  UserCheck,
+  Store,
+  CreditCard
 } from "lucide-react";
 import { format } from "date-fns";
 import { Link, useLocation } from "wouter";
