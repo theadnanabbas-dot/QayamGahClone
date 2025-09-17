@@ -118,21 +118,21 @@ function VendorRegistrationModal({
   // Mutations
   const signupMutation = useMutation({
     mutationFn: async (data: SignupFormData) => {
-      // For now, simulate account creation - will be implemented with proper backend endpoint
+      // Store signup data locally and proceed to next step
       return { success: true, user: { email: data.email, role: "property_owner" } };
     },
     onSuccess: (data) => {
       setSignupData(data);
       setStep(2);
       toast({
-        title: "Account created!",
+        title: "Account details saved!",
         description: "Please complete your profile.",
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to create account. Please try again.",
+        description: "Please check your details and try again.",
         variant: "destructive",
       });
     },
@@ -140,22 +140,33 @@ function VendorRegistrationModal({
 
   const personalDetailsMutation = useMutation({
     mutationFn: async (data: PersonalDetailsFormData) => {
-      // For now, simulate profile creation - will be implemented with proper backend endpoint
-      // In a real implementation, this would invalidate the users query to refresh the vendor list
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      return { success: true };
+      // Get signup data from step 1
+      const signupFormData = signupForm.getValues();
+      
+      // Combine signup and personal details for registration
+      const registrationData = {
+        email: signupFormData.email,
+        password: signupFormData.password,
+        ...data,
+      };
+
+      const response = await apiRequest("POST", "/api/vendor/register", registrationData);
+      return await response.json();
     },
     onSuccess: () => {
       setStep(3);
       toast({
         title: "Success!",
-        description: "Vendor account created successfully.",
+        description: "Vendor account created successfully. Pending approval.",
       });
+      // Invalidate queries to refresh vendor data
+      queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to save profile. Please try again.",
+        description: error.message || "Failed to save profile. Please try again.",
         variant: "destructive",
       });
     },
