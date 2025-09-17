@@ -91,7 +91,7 @@ interface BlogPost {
 }
 
 // Header Component
-function Header() {
+function Header({ onOpenVendorModal }: { onOpenVendorModal: () => void }) {
   return (
     <header className="bg-white dark:bg-gray-900 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -129,7 +129,7 @@ function Header() {
               </div>
             </div>
             <Button 
-              onClick={() => setShowVendorModal(true)}
+              onClick={onOpenVendorModal}
               className="bg-primary hover:bg-primary/90 text-white"
               data-testid="button-register-owner"
             >
@@ -769,10 +769,432 @@ function Footer() {
   );
 }
 
+// Vendor Registration Modal Component
+function VendorRegistrationModal({ 
+  isOpen, 
+  onClose 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+}) {
+  const [step, setStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
+  const [signupData, setSignupData] = useState<any>(null);
+  const { toast } = useToast();
+
+  // Step 1: Signup Form
+  const signupForm = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  // Step 2: Personal Details Form
+  const personalForm = useForm<PersonalDetailsFormData>({
+    resolver: zodResolver(personalDetailsSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      phoneNo1: "",
+      phoneNo2: "",
+      cnic: "",
+      address: "",
+      city: "",
+      country: "Pakistan",
+      agreeToTerms: false,
+    },
+  });
+
+  // Mutations
+  const signupMutation = useMutation({
+    mutationFn: async (data: SignupFormData) => {
+      // For now, simulate account creation - will be implemented with proper backend endpoint
+      return { success: true, user: { email: data.email, role: "property_owner" } };
+    },
+    onSuccess: (data) => {
+      setSignupData(data);
+      setStep(2);
+      toast({
+        title: "Account created!",
+        description: "Please complete your profile.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create account. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const personalDetailsMutation = useMutation({
+    mutationFn: async (data: PersonalDetailsFormData) => {
+      // For now, simulate profile creation - will be implemented with proper backend endpoint
+      return { success: true };
+    },
+    onSuccess: () => {
+      setStep(3);
+      toast({
+        title: "Success!",
+        description: "Vendor account created successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to save profile. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSignupSubmit = (data: SignupFormData) => {
+    signupMutation.mutate(data);
+  };
+
+  const handlePersonalDetailsSubmit = (data: PersonalDetailsFormData) => {
+    personalDetailsMutation.mutate(data);
+  };
+
+  const handleClose = () => {
+    setStep(1);
+    setSignupData(null);
+    signupForm.reset();
+    personalForm.reset();
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md" data-testid="modal-vendor-registration">
+        <DialogHeader>
+          <DialogTitle>
+            {step === 1 && "Create Vendor Account"}
+            {step === 2 && "Add Personal Details"}
+            {step === 3 && "Success"}
+          </DialogTitle>
+        </DialogHeader>
+
+        {/* Step 1: Signup */}
+        {step === 1 && (
+          <div className="space-y-4" data-testid="step-signup">
+            <Form {...signupForm}>
+              <form onSubmit={signupForm.handleSubmit(handleSignupSubmit)} className="space-y-4">
+                <FormField
+                  control={signupForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="email"
+                          placeholder="Enter your email"
+                          data-testid="input-email"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={signupForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password *</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Enter your password"
+                            data-testid="input-password"
+                            {...field}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
+                            data-testid="button-toggle-password"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={signupMutation.isPending}
+                  data-testid="button-signup-submit"
+                >
+                  {signupMutation.isPending ? "Creating Account..." : "Create Account"}
+                </Button>
+              </form>
+            </Form>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">or</span>
+              </div>
+            </div>
+
+            <Button 
+              variant="outline" 
+              className="w-full"
+              data-testid="button-google-oauth"
+              onClick={() => toast({
+                title: "Coming Soon",
+                description: "Google OAuth integration will be available soon.",
+              })}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Continue with Google
+            </Button>
+
+            <p className="text-center text-sm text-gray-600">
+              Already have an account?{" "}
+              <a href="/login" className="text-primary hover:underline">
+                Log in
+              </a>
+            </p>
+          </div>
+        )}
+
+        {/* Step 2: Personal Details */}
+        {step === 2 && (
+          <div className="space-y-4" data-testid="step-personal-details">
+            <Form {...personalForm}>
+              <form onSubmit={personalForm.handleSubmit(handlePersonalDetailsSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={personalForm.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name *</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="First Name"
+                            data-testid="input-first-name"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={personalForm.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name *</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Last Name"
+                            data-testid="input-last-name"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={personalForm.control}
+                  name="phoneNo1"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone No. 1 *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Primary phone number"
+                          data-testid="input-phone-1"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={personalForm.control}
+                  name="phoneNo2"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone No. 2 (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Secondary phone number"
+                          data-testid="input-phone-2"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={personalForm.control}
+                  name="cnic"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CNIC / National Identity No. *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="XXXXX-XXXXXXX-X"
+                          data-testid="input-cnic"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={personalForm.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Complete address"
+                          data-testid="input-address"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={personalForm.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>City *</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="City"
+                            data-testid="input-city"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={personalForm.control}
+                    name="country"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Country *</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Country"
+                            data-testid="input-country"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={personalForm.control}
+                  name="agreeToTerms"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-terms"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          I agree to the Terms & Conditions *
+                        </FormLabel>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={personalDetailsMutation.isPending}
+                  data-testid="button-personal-details-submit"
+                >
+                  {personalDetailsMutation.isPending ? "Submitting..." : "Submit"}
+                </Button>
+              </form>
+            </Form>
+          </div>
+        )}
+
+        {/* Step 3: Success */}
+        {step === 3 && (
+          <div className="text-center space-y-4" data-testid="step-success">
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold">Vendor Account Created Successfully!</h3>
+            <p className="text-gray-600">
+              Your vendor account has been created and is pending approval. You will receive an email notification once your account is approved.
+            </p>
+            <Button onClick={handleClose} className="w-full" data-testid="button-success-close">
+              Done
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Homepage() {
+  const [showVendorModal, setShowVendorModal] = useState(false);
+
   return (
     <div className="min-h-screen">
-      <Header />
+      <Header onOpenVendorModal={() => setShowVendorModal(true)} />
       <HeroSection />
       <CategoriesSection />
       <FeaturedPropertiesSection />
@@ -782,6 +1204,11 @@ export default function Homepage() {
       <TestimonialsSection />
       <BlogSection />
       <Footer />
+      
+      <VendorRegistrationModal 
+        isOpen={showVendorModal}
+        onClose={() => setShowVendorModal(false)}
+      />
     </div>
   );
 }
