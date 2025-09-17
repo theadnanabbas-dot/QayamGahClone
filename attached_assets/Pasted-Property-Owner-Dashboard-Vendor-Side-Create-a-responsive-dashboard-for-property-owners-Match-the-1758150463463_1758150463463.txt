@@ -1,0 +1,71 @@
+Property Owner Dashboard (Vendor Side)
+Create a responsive dashboard for property owners. Match the look & feel of the Admin Dashboard.
+
+1.	Overall Layout
+Sidebar on the left with 6 tabs:
+Dashboard
+Add New Property
+All Properties
+Bookings
+Transactions
+Edit Profile
+Sidebar collapses into a hamburger menu on mobile.
+Highlight the active tab.
+
+2. Dashboard Tab
+Same layout style as Admin Dashboard:
+Four summary cards (Bookings, Revenue, Total Properties, Pending Properties).
+Two placeholder charts:
+Month-wise Bookings
+Month-wise Revenue
+
+3. Add New Property
+Use the existing “Add Property” functionality but redesign the UI to match the dashboard theme:
+Large input form in a card layout.
+Submit button at bottom.
+
+4. All Properties
+Create a table view listing all properties for the logged-in owner (e.g., owner@qayamgah.com).
+Table columns:
+Property Name
+Location (City / Address)
+Status (Active, Pending, Rejected)
+Actions (View / Edit)
+Add 3–4 dummy properties under owner@qayamgah.com for testing, with mixed statuses.
+When clicking an Action:
+Open a pop-up modal showing property details.
+“View” = read-only with close X.
+“Edit” = editable fields with Save Changes and Discard buttons (just like vendor editing).
+
+5. Bookings
+Create a table showing all bookings for this owner:
+Columns: Booking ID, Property Name, Customer Name, Check-in/Check-out, Payment Status (Paid/Unpaid), Actions (View).
+Add a few dummy bookings.
+
+6.  Transactions
+Simple table showing:
+Transaction ID
+Property Name
+Amount
+Payment Date
+Status (Paid / Pending)
+Also add few dummy transactions
+
+7. Edit Profile (Property Owner)
+Create a page with a form to edit the owner’s details:
+Fields:
+First Name
+Last Name
+Email (read-only or editable if needed)
+Phone No. 1
+Phone No. 2
+CNIC / National ID
+Address
+City
+Country
+Buttons: Discard (no changes) and Save Changes (updates profile).
+
+8. General Notes
+All modals must be mobile-friendly (full-screen on small devices).
+Use consistent design with Admin portal:
+Keep backend calls as placeholders so UI can be tested.
