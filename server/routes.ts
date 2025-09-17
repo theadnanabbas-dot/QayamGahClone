@@ -1,27 +1,27 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { 
-  insertUserSchema, 
+import {
+  insertUserSchema,
   updateUserSchema,
   loginUserSchema,
-  insertCitySchema, 
-  insertPropertyCategorySchema, 
-  insertPropertySchema, 
-  insertBlogSchema, 
-  insertTestimonialSchema, 
+  insertCitySchema,
+  insertPropertyCategorySchema,
+  insertPropertySchema,
+  insertBlogSchema,
+  insertTestimonialSchema,
   insertBookingSchema,
-  updateBookingStatusSchema
+  updateBookingStatusSchema,
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Static image serving route - placeholder images
   app.get("/api/images/*", (req, res) => {
     const imagePath = req.path.replace("/api/images/", "");
-    
+
     // Generate placeholder based on image type and path
     let imageUrl = "https://picsum.photos/400/300";
-    
+
     if (imagePath.includes("cities")) {
       imageUrl = "https://picsum.photos/600/400"; // City images - wider format
     } else if (imagePath.includes("properties")) {
@@ -33,7 +33,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } else if (imagePath.includes("blog")) {
       imageUrl = "https://picsum.photos/800/400"; // Blog images - wide format
     }
-    
+
     // Redirect to placeholder image
     res.redirect(imageUrl);
   });
@@ -82,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password } = loginUserSchema.parse(req.body);
       const user = await storage.getUserByEmail(email);
-      
+
       if (!user || user.passwordHash !== `hashed_${password}`) {
         return res.status(401).json({ error: "Invalid email or password" });
       }
@@ -92,10 +92,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { passwordHash, ...userWithoutPassword } = user;
-      res.json({ 
-        message: "Login successful", 
+      res.json({
+        message: "Login successful",
         user: userWithoutPassword,
-        token: `mock_jwt_token_${user.id}` // In real app, generate proper JWT
+        token: `mock_jwt_token_${user.id}`, // In real app, generate proper JWT
       });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -105,19 +105,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
-      
+
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(userData.email);
       if (existingUser) {
-        return res.status(409).json({ error: "User with this email already exists" });
+        return res
+          .status(409)
+          .json({ error: "User with this email already exists" });
       }
 
       const user = await storage.createUser(userData);
       const { passwordHash, ...userWithoutPassword } = user;
-      res.status(201).json({ 
-        message: "Registration successful", 
+      res.status(201).json({
+        message: "Registration successful",
         user: userWithoutPassword,
-        token: `mock_jwt_token_${user.id}`
+        token: `mock_jwt_token_${user.id}`,
       });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -128,15 +130,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/admin-login", async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+        return res
+          .status(400)
+          .json({ message: "Email and password are required" });
       }
-      
+
       // Demo admin credentials
       const demoAdminEmail = "admin@qayamgah.com";
       const demoAdminPassword = "admin123";
-      
+
       // Check for demo admin credentials
       if (email === demoAdminEmail && password === demoAdminPassword) {
         const adminUser = {
@@ -144,19 +148,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: demoAdminEmail,
           role: "admin",
           fullName: "System Administrator",
-          username: "admin"
+          username: "admin",
         };
-        
+
         // Generate a simple token (in production, use JWT)
         const token = `admin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        return res.json({ 
-          success: true, 
+
+        return res.json({
+          success: true,
           user: adminUser,
-          token
+          token,
         });
       }
-      
+
       // Check database for admin users
       const user = await storage.getUserByEmail(email);
       if (!user || user.role !== "admin") {
@@ -164,28 +168,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!user.isActive) {
-        return res.status(403).json({ message: "Admin account is deactivated" });
+        return res
+          .status(403)
+          .json({ message: "Admin account is deactivated" });
       }
-      
+
       // Note: In a real app, you'd verify the hashed password here
       // For demo purposes, we'll accept the correct password format
       if (user.passwordHash !== `hashed_${password}`) {
         return res.status(401).json({ message: "Invalid admin credentials" });
       }
-      
+
       // Generate a simple token (in production, use JWT)
       const token = `admin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         user: {
           id: user.id,
           username: user.username,
           email: user.email,
           role: user.role,
-          fullName: user.fullName
+          fullName: user.fullName,
         },
-        token
+        token,
       });
     } catch (error: any) {
       console.error("Admin login error:", error);
@@ -197,15 +203,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/property-owner-login", async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+        return res
+          .status(400)
+          .json({ message: "Email and password are required" });
       }
-      
+
       // Demo property owner credentials
       const demoOwnerEmail = "owner@qayamgah.com";
       const demoOwnerPassword = "owner123";
-      
+
       // Check for demo property owner credentials
       if (email === demoOwnerEmail && password === demoOwnerPassword) {
         const ownerUser = {
@@ -213,47 +221,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: demoOwnerEmail,
           role: "property_owner",
           fullName: "Property Owner Demo",
-          username: "propertyowner"
+          username: "propertyowner",
         };
-        
+
         // Generate a simple token (in production, use JWT)
         const token = `owner_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        return res.json({ 
-          success: true, 
+
+        return res.json({
+          success: true,
           user: ownerUser,
-          token
+          token,
         });
       }
-      
+
       // Check database for property owner users
       const user = await storage.getUserByEmail(email);
       if (!user || user.role !== "property_owner") {
-        return res.status(401).json({ message: "Invalid property owner credentials" });
+        return res
+          .status(401)
+          .json({ message: "Invalid property owner credentials" });
       }
 
       if (!user.isActive) {
-        return res.status(403).json({ message: "Property owner account is deactivated" });
+        return res
+          .status(403)
+          .json({ message: "Property owner account is deactivated" });
       }
-      
+
       // Note: In a real app, you'd verify the hashed password here
       if (user.passwordHash !== `hashed_${password}`) {
-        return res.status(401).json({ message: "Invalid property owner credentials" });
+        return res
+          .status(401)
+          .json({ message: "Invalid property owner credentials" });
       }
-      
+
       // Generate a simple token (in production, use JWT)
       const token = `owner_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         user: {
           id: user.id,
           username: user.username,
           email: user.email,
           role: user.role,
-          fullName: user.fullName
+          fullName: user.fullName,
         },
-        token
+        token,
       });
     } catch (error: any) {
       console.error("Property owner login error:", error);
@@ -265,15 +279,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/customer-login", async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+        return res
+          .status(400)
+          .json({ message: "Email and password are required" });
       }
-      
+
       // Demo customer credentials
       const demoCustomerEmail = "customer@qayamgah.com";
       const demoCustomerPassword = "customer123";
-      
+
       // Check for demo customer credentials
       if (email === demoCustomerEmail && password === demoCustomerPassword) {
         const customerUser = {
@@ -281,47 +297,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: demoCustomerEmail,
           role: "customer",
           fullName: "Customer Demo",
-          username: "customer"
+          username: "customer",
         };
-        
+
         // Generate a simple token (in production, use JWT)
         const token = `customer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        return res.json({ 
-          success: true, 
+
+        return res.json({
+          success: true,
           user: customerUser,
-          token
+          token,
         });
       }
-      
+
       // Check database for customer users
       const user = await storage.getUserByEmail(email);
       if (!user || user.role !== "customer") {
-        return res.status(401).json({ message: "Invalid customer credentials" });
+        return res
+          .status(401)
+          .json({ message: "Invalid customer credentials" });
       }
 
       if (!user.isActive) {
-        return res.status(403).json({ message: "Customer account is deactivated" });
+        return res
+          .status(403)
+          .json({ message: "Customer account is deactivated" });
       }
-      
+
       // Note: In a real app, you'd verify the hashed password here
       if (user.passwordHash !== `hashed_${password}`) {
-        return res.status(401).json({ message: "Invalid customer credentials" });
+        return res
+          .status(401)
+          .json({ message: "Invalid customer credentials" });
       }
-      
+
       // Generate a simple token (in production, use JWT)
       const token = `customer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         user: {
           id: user.id,
           username: user.username,
           email: user.email,
           role: user.role,
-          fullName: user.fullName
+          fullName: user.fullName,
         },
-        token
+        token,
       });
     } catch (error: any) {
       console.error("Customer login error:", error);
@@ -333,7 +355,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/users", async (req, res) => {
     try {
       const users = await storage.getAllUsers();
-      const usersWithoutPasswords = users.map(({ passwordHash, ...user }) => user);
+      const usersWithoutPasswords = users.map(
+        ({ passwordHash, ...user }) => user,
+      );
       res.json(usersWithoutPasswords);
     } catch (error: any) {
       res.status(500).json({ error: "Internal server error" });
@@ -343,7 +367,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/users/role/:role", async (req, res) => {
     try {
       const users = await storage.getUsersByRole(req.params.role);
-      const usersWithoutPasswords = users.map(({ passwordHash, ...user }) => user);
+      const usersWithoutPasswords = users.map(
+        ({ passwordHash, ...user }) => user,
+      );
       res.json(usersWithoutPasswords);
     } catch (error: any) {
       res.status(500).json({ error: "Internal server error" });
@@ -353,14 +379,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/users/:id/role", async (req, res) => {
     try {
       const { role } = req.body;
-      
+
       if (!role) {
         return res.status(400).json({ error: "Role is required" });
       }
 
       const validRoles = ["admin", "property_owner", "customer"];
       if (!validRoles.includes(role)) {
-        return res.status(400).json({ error: "Invalid role. Must be one of: admin, property_owner, customer" });
+        return res
+          .status(400)
+          .json({
+            error:
+              "Invalid role. Must be one of: admin, property_owner, customer",
+          });
       }
 
       const user = await storage.updateUser(req.params.id, { role });
@@ -369,9 +400,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { passwordHash, ...userWithoutPassword } = user;
-      res.json({ 
-        message: "User role updated successfully", 
-        user: userWithoutPassword 
+      res.json({
+        message: "User role updated successfully",
+        user: userWithoutPassword,
       });
     } catch (error: any) {
       res.status(500).json({ error: "Internal server error" });
@@ -381,9 +412,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/users/:id/status", async (req, res) => {
     try {
       const { isActive } = req.body;
-      
+
       if (typeof isActive !== "boolean") {
-        return res.status(400).json({ error: "isActive must be a boolean value" });
+        return res
+          .status(400)
+          .json({ error: "isActive must be a boolean value" });
       }
 
       // For now, just get the user to return status
@@ -393,9 +426,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { passwordHash, ...userWithoutPassword } = user;
-      res.json({ 
-        message: `User status updated successfully`, 
-        user: userWithoutPassword 
+      res.json({
+        message: `User status updated successfully`,
+        user: userWithoutPassword,
       });
     } catch (error: any) {
       res.status(500).json({ error: "Internal server error" });
@@ -418,28 +451,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/properties", async (req, res) => {
     try {
       const propertyData = insertPropertySchema.parse(req.body);
-      
+
       // Generate slug from title
       const slug = propertyData.title
         .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
         .trim();
-      
+
       const propertyWithSlug = { ...propertyData, slug };
       const property = await storage.createProperty(propertyWithSlug);
-      
-      res.status(201).json({ 
-        message: "Property created successfully", 
-        property 
+
+      res.status(201).json({
+        message: "Property created successfully",
+        property,
       });
     } catch (error: any) {
-      if (error.code === "23505") { // Unique constraint violation
-        res.status(409).json({ error: "Property with this title already exists" });
+      if (error.code === "23505") {
+        // Unique constraint violation
+        res
+          .status(409)
+          .json({ error: "Property with this title already exists" });
       } else {
         console.error("Property creation error:", error);
-        res.status(400).json({ error: error.message || "Invalid property data" });
+        res
+          .status(400)
+          .json({ error: error.message || "Invalid property data" });
       }
     }
   });
@@ -536,7 +574,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/property-categories/:id", async (req, res) => {
     try {
       const updates = insertPropertyCategorySchema.partial().parse(req.body);
-      const category = await storage.updatePropertyCategory(req.params.id, updates);
+      const category = await storage.updatePropertyCategory(
+        req.params.id,
+        updates,
+      );
       if (!category) {
         return res.status(404).json({ error: "Property category not found" });
       }
@@ -564,11 +605,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filters: any = {};
       if (req.query.cityId) filters.cityId = req.query.cityId;
       if (req.query.categoryId) filters.categoryId = req.query.categoryId;
-      if (req.query.featured !== undefined) filters.featured = req.query.featured === 'true';
+      if (req.query.featured !== undefined)
+        filters.featured = req.query.featured === "true";
       if (req.query.limit) filters.limit = parseInt(req.query.limit as string);
-      if (req.query.priceMin) filters.priceMin = parseFloat(req.query.priceMin as string);
-      if (req.query.priceMax) filters.priceMax = parseFloat(req.query.priceMax as string);
-      if (req.query.minRating) filters.minRating = parseFloat(req.query.minRating as string);
+      if (req.query.priceMin)
+        filters.priceMin = parseFloat(req.query.priceMin as string);
+      if (req.query.priceMax)
+        filters.priceMax = parseFloat(req.query.priceMax as string);
+      if (req.query.minRating)
+        filters.minRating = parseFloat(req.query.minRating as string);
 
       const properties = await storage.getProperties(filters);
       res.json(properties);
@@ -629,22 +674,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { startAt, endAt } = req.query;
       if (!startAt || !endAt) {
-        return res.status(400).json({ error: "startAt and endAt query parameters are required" });
+        return res
+          .status(400)
+          .json({ error: "startAt and endAt query parameters are required" });
       }
 
       const start = new Date(startAt as string);
       const end = new Date(endAt as string);
-      
+
       if (isNaN(start.getTime()) || isNaN(end.getTime())) {
         return res.status(400).json({ error: "Invalid date format" });
       }
 
-      const isAvailable = await storage.isPropertyAvailable(req.params.id, start, end);
-      const pricing = isAvailable ? await storage.calculateBookingPrice(req.params.id, start, end) : null;
+      const isAvailable = await storage.isPropertyAvailable(
+        req.params.id,
+        start,
+        end,
+      );
+      const pricing = isAvailable
+        ? await storage.calculateBookingPrice(req.params.id, start, end)
+        : null;
 
-      res.json({ 
+      res.json({
         available: isAvailable,
-        pricing: pricing
+        pricing: pricing,
       });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -657,7 +710,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const start = startAt ? new Date(startAt as string) : undefined;
       const end = endAt ? new Date(endAt as string) : undefined;
 
-      const bookings = await storage.getBookingsForProperty(req.params.id, start, end);
+      const bookings = await storage.getBookingsForProperty(
+        req.params.id,
+        start,
+        end,
+      );
       res.json(bookings);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
@@ -667,7 +724,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Blog routes
   app.get("/api/blogs", async (req, res) => {
     try {
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
       const blogs = await storage.getBlogs(limit);
       res.json(blogs);
     } catch (error) {
@@ -757,7 +816,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/testimonials/:id", async (req, res) => {
     try {
       const updates = insertTestimonialSchema.partial().parse(req.body);
-      const testimonial = await storage.updateTestimonial(req.params.id, updates);
+      const testimonial = await storage.updateTestimonial(
+        req.params.id,
+        updates,
+      );
       if (!testimonial) {
         return res.status(404).json({ error: "Testimonial not found" });
       }
@@ -851,25 +913,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { propertyId } = req.params;
       const { startAt, endAt, excludeBookingId } = req.query;
-      
+
       if (!startAt || !endAt) {
-        return res.status(400).json({ error: "startAt and endAt are required" });
+        return res
+          .status(400)
+          .json({ error: "startAt and endAt are required" });
       }
 
       const startDate = new Date(startAt as string);
       const endDate = new Date(endAt as string);
-      
+
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return res.status(400).json({ error: "Invalid date format" });
       }
 
       const isAvailable = await storage.isPropertyAvailable(
-        propertyId, 
-        startDate, 
-        endDate, 
-        excludeBookingId as string
+        propertyId,
+        startDate,
+        endDate,
+        excludeBookingId as string,
       );
-      
+
       res.json({ available: isAvailable });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -880,11 +944,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { propertyId } = req.params;
       const { startAt, endAt } = req.query;
-      
+
       const startDate = startAt ? new Date(startAt as string) : undefined;
       const endDate = endAt ? new Date(endAt as string) : undefined;
-      
-      const bookings = await storage.getBookingsForProperty(propertyId, startDate, endDate);
+
+      const bookings = await storage.getBookingsForProperty(
+        propertyId,
+        startDate,
+        endDate,
+      );
       res.json(bookings);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -895,24 +963,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { propertyId } = req.params;
       const { startAt, endAt } = req.body;
-      
+
       if (!startAt || !endAt) {
-        return res.status(400).json({ error: "startAt and endAt are required" });
+        return res
+          .status(400)
+          .json({ error: "startAt and endAt are required" });
       }
 
       const startDate = new Date(startAt);
       const endDate = new Date(endAt);
-      
+
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return res.status(400).json({ error: "Invalid date format" });
       }
 
-      const priceCalculation = await storage.calculateBookingPrice(propertyId, startDate, endDate);
-      
+      const priceCalculation = await storage.calculateBookingPrice(
+        propertyId,
+        startDate,
+        endDate,
+      );
+
       if (!priceCalculation) {
-        return res.status(400).json({ error: "Unable to calculate price for this booking" });
+        return res
+          .status(400)
+          .json({ error: "Unable to calculate price for this booking" });
       }
-      
+
       res.json(priceCalculation);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
