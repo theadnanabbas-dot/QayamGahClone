@@ -1086,7 +1086,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.query.userId as string;
       const bookings = await storage.getBookings(userId);
-      res.json(bookings);
+      
+      // Enrich bookings with guest information
+      const enrichedBookings = await Promise.all(
+        bookings.map(async (booking) => {
+          try {
+            const guestUser = await storage.getUser(booking.userId);
+            return {
+              ...booking,
+              guestName: guestUser?.fullName || guestUser?.username || "Unknown Guest",
+              guestEmail: guestUser?.email || "unknown@example.com",
+              guestPhone: guestUser?.phone || null,
+            };
+          } catch (error) {
+            // If user not found, return booking with fallback guest info
+            return {
+              ...booking,
+              guestName: "Unknown Guest",
+              guestEmail: "unknown@example.com", 
+              guestPhone: null,
+            };
+          }
+        })
+      );
+      
+      res.json(enrichedBookings);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
     }

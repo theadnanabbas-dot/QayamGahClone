@@ -1013,6 +1013,104 @@ export async function loadSampleData() {
     currency: "PKR"
   }));
 
+  // Create the demo property owner for the dashboard testing
+  const demoOwner = await storage.createUser({
+    id: "owner-001", // Hardcoded ID that matches the frontend login system
+    username: "owner",
+    email: "owner@qayamgah.com", 
+    password: "owner123",
+    role: "property_owner",
+    fullName: "John Doe",
+    phone: "+92-300-1234567"
+  });
+
+  // Create some properties owned by the demo owner
+  const demoProperty1 = await storage.createProperty({
+    title: "Luxury Apartment in DHA",
+    slug: "luxury-apartment-dha-demo",
+    description: "Beautiful 3-bedroom apartment with modern amenities", 
+    pricePerHour: "2500.00",
+    pricePerDay: "50000.00",
+    minHours: 2,
+    maxGuests: 6,
+    address: "123 DHA Phase 2, Lahore",
+    latitude: "31.5204",
+    longitude: "74.3587",
+    cityId: lahore.id,
+    categoryId: apartments.id,
+    ownerId: demoOwner.id,
+    bedrooms: 3,
+    bathrooms: 2,
+    amenities: ["WiFi", "Air Conditioning", "Parking", "Security"],
+    images: ["/api/images/properties/apt1-1.jpg", "/api/images/properties/apt1-2.jpg"],
+    mainImage: "/api/images/properties/apt1-main.jpg",
+    isFeature: false,
+    isActive: true,
+    rating: "4.5"
+  });
+
+  const demoProperty2 = await storage.createProperty({
+    title: "Cozy House in Gulberg",
+    slug: "cozy-house-gulberg-demo",
+    description: "Perfect family house with garden and garage", 
+    pricePerHour: "3000.00",
+    pricePerDay: "60000.00",
+    minHours: 4,
+    maxGuests: 8,
+    address: "456 Gulberg III, Lahore",
+    latitude: "31.5204",
+    longitude: "74.3587",
+    cityId: lahore.id,
+    categoryId: houses.id,
+    ownerId: demoOwner.id,
+    bedrooms: 4,
+    bathrooms: 3,
+    amenities: ["WiFi", "Garden", "Garage", "Kitchen"],
+    images: ["/api/images/properties/house1-1.jpg", "/api/images/properties/house1-2.jpg"],
+    mainImage: "/api/images/properties/house1-main.jpg",
+    isFeature: false,
+    isActive: true,
+    rating: "4.8"
+  });
+
+  const demoProperty3 = await storage.createProperty({
+    title: "Modern Office Space",
+    slug: "modern-office-space-demo",
+    description: "Professional office space in commercial area", 
+    pricePerHour: "1800.00",
+    pricePerDay: "36000.00",
+    minHours: 8,
+    maxGuests: 15,
+    address: "789 MM Alam Road, Lahore",
+    latitude: "31.5204",
+    longitude: "74.3587",
+    cityId: lahore.id,
+    categoryId: office.id,
+    ownerId: demoOwner.id,
+    bedrooms: 0,
+    bathrooms: 2,
+    amenities: ["WiFi", "Meeting Room", "Parking", "Reception"],
+    images: ["/api/images/properties/office1-1.jpg", "/api/images/properties/office1-2.jpg"],
+    mainImage: "/api/images/properties/office1-main.jpg",
+    isFeature: false,
+    isActive: true,
+    rating: "4.2"
+  });
+
+  // Create demo vendor profile for the demo owner
+  const demoVendor = await storage.createVendor({
+    userId: demoOwner.id,
+    firstName: "John",
+    lastName: "Doe",
+    phoneNo1: "+92-300-1234567",
+    phoneNo2: "+92-321-9876543",
+    cnic: "12345-6789012-3",
+    address: "123 Main Street, DHA Phase 1",
+    city: "Lahore",
+    country: "Pakistan",
+    status: "approved"
+  });
+
   // Create dummy vendor users and vendor profiles for testing
   const vendorUser1 = await storage.createUser({
     username: "ahmed_vendor",
