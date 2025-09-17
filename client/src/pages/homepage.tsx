@@ -1244,25 +1244,33 @@ function VendorLoginModal({
   const loginMutation = useMutation({
     mutationFn: async (data: LoginFormData) => {
       const response = await apiRequest("POST", "/api/vendor/login", data);
-      return await response.json();
+      const result = await response.json();
+      
+      // If response is not ok, throw error with the API response for proper error handling
+      if (!response.ok) {
+        const error = new Error(result.message || "Login failed");
+        error.response = result;
+        error.status = response.status;
+        throw error;
+      }
+      
+      return result;
     },
     onSuccess: (data) => {
       if (data.success) {
-        // Check vendor status
-        if (data.vendor?.status === "pending") {
-          toast({
-            title: "Account Pending",
-            description: "Your account is pending approval.",
-            variant: "destructive",
-          });
-        } else if (data.vendor?.status === "approved") {
+        // Check vendor status - this should not happen for pending since they throw an error
+        if (data.vendor?.status === "approved") {
+          // Store authentication data in localStorage
+          localStorage.setItem("property_owner_token", data.token);
+          localStorage.setItem("property_owner_user", JSON.stringify(data.user));
+          
           toast({
             title: "Login Successful!",
             description: "Redirecting to property owner dashboard...",
           });
           onClose();
-          // TODO: Redirect to property owner dashboard
-          window.location.href = "/dashboard";
+          // Redirect to property owner dashboard
+          window.location.href = "/property-owner";
         } else {
           toast({
             title: "Access Denied",
@@ -1273,17 +1281,67 @@ function VendorLoginModal({
       } else {
         toast({
           title: "Login Failed",
-          description: "Invalid email or password.",
+          description: data.message || "Invalid email or password.",
           variant: "destructive",
         });
       }
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: "Invalid email or password.",
-        variant: "destructive",
-      });
+      console.log("Login error:", error);
+      
+      // Extract the error message from the apiRequest error format: "statusCode: errorMessage"
+      const errorMessage = error.message || "";
+      console.log("Error message:", errorMessage);
+      
+      // Handle specific error messages from the API
+      if (errorMessage) {
+        // Check if it's a pending account message
+        if (errorMessage.toLowerCase().includes("pending")) {
+          toast({
+            title: "Account Pending",
+            description: "Your account is pending approval.",
+            variant: "destructive",
+          });
+        } else if (errorMessage.toLowerCase().includes("rejected")) {
+          toast({
+            title: "Account Rejected",
+            description: "Your account has been rejected. Please contact the administrator.",
+            variant: "destructive",
+          });
+        } else if (errorMessage.toLowerCase().includes("deactivated")) {
+          toast({
+            title: "Account Deactivated",
+            description: "Your account is deactivated. Please contact the administrator.",
+            variant: "destructive",
+          });
+        } else if (errorMessage.includes("403:")) {
+          // Extract the actual error message after the status code
+          const actualMessage = errorMessage.split("403:")[1]?.trim() || "Access denied";
+          toast({
+            title: "Login Failed",
+            description: actualMessage,
+            variant: "destructive",
+          });
+        } else if (errorMessage.includes("401:")) {
+          toast({
+            title: "Login Failed",
+            description: "Invalid email or password.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Login Failed",
+            description: "Invalid email or password.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Invalid email or password.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
