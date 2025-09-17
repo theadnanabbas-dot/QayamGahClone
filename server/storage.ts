@@ -90,6 +90,7 @@ export interface IStorage {
   getVendorByUserId(userId: string): Promise<Vendor | undefined>;
   getVendorByEmail(email: string): Promise<Vendor | undefined>;
   createVendor(vendor: InsertVendor): Promise<Vendor>;
+  updateVendor(id: string, updates: Partial<InsertVendor>): Promise<Vendor | undefined>;
   updateVendorStatus(id: string, status: string): Promise<Vendor | undefined>;
   deleteVendor(id: string): Promise<boolean>;
 }
@@ -647,6 +648,22 @@ export class MemStorage implements IStorage {
     };
     this.vendors.set(id, vendor);
     return vendor;
+  }
+
+  async updateVendor(id: string, updates: Partial<InsertVendor>): Promise<Vendor | undefined> {
+    const vendor = this.vendors.get(id);
+    if (!vendor) return undefined;
+
+    const updatedVendor: Vendor = {
+      ...vendor,
+      ...updates,
+      id, // Ensure ID doesn't change
+      userId: vendor.userId, // Ensure userId doesn't change
+      createdAt: vendor.createdAt, // Ensure createdAt doesn't change
+      approvedAt: vendor.approvedAt, // Preserve existing approvedAt
+    };
+    this.vendors.set(id, updatedVendor);
+    return updatedVendor;
   }
 
   async updateVendorStatus(id: string, status: string): Promise<Vendor | undefined> {

@@ -184,6 +184,15 @@ export const updateVendorStatusSchema = z.object({
   status: z.enum(["pending", "approved", "rejected"]),
 });
 
+export const updateVendorSchema = createInsertSchema(vendors).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  approvedAt: true,
+}).partial().extend({
+  status: z.enum(["pending", "approved", "rejected"]).optional(),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type LoginUser = z.infer<typeof loginUserSchema>;

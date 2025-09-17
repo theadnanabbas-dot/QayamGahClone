@@ -14,6 +14,7 @@ import {
   updateBookingStatusSchema,
   insertVendorSchema,
   updateVendorStatusSchema,
+  updateVendorSchema,
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -484,6 +485,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         message: "Vendor status updated successfully",
+        vendor,
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/vendors/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const vendorData = updateVendorSchema.parse(req.body);
+      const vendor = await storage.updateVendor(req.params.id, vendorData);
+      if (!vendor) {
+        return res.status(404).json({ error: "Vendor not found" });
+      }
+
+      res.json({
+        message: "Vendor details updated successfully",
         vendor,
       });
     } catch (error: any) {
