@@ -21,6 +21,14 @@ import AdminUsers from "@/pages/admin/users";
 import AdminVendors from "@/pages/admin/vendors";
 import AdminTransactions from "@/pages/admin/transactions";
 
+// Property Owner Dashboard Pages
+import PropertyOwnerDashboardNew from "@/pages/property-owner/dashboard";
+import PropertyOwnerAddProperty from "@/pages/property-owner/add-property";
+import PropertyOwnerProperties from "@/pages/property-owner/properties";
+import PropertyOwnerBookings from "@/pages/property-owner/bookings";
+import PropertyOwnerTransactions from "@/pages/property-owner/transactions";
+import PropertyOwnerProfile from "@/pages/property-owner/profile";
+
 function Router() {
   return (
     <Switch>
@@ -35,9 +43,19 @@ function Router() {
       <Route path="/admin/vendors" component={AdminVendors} />
       <Route path="/admin/transactions" component={AdminTransactions} />
       <Route path="/admin" component={AdminPanel} />
+      
+      {/* Property Owner Routes */}
       <Route path="/property-owner/login" component={PropertyOwnerLogin} />
-      <Route path="/property-owner/add-property" component={AddProperty} />
-      <Route path="/property-owner" component={PropertyOwnerDashboard} />
+      <Route path="/property-owner/add-property" component={PropertyOwnerAddProperty} />
+      <Route path="/property-owner/properties" component={PropertyOwnerProperties} />
+      <Route path="/property-owner/bookings" component={PropertyOwnerBookings} />
+      <Route path="/property-owner/transactions" component={PropertyOwnerTransactions} />
+      <Route path="/property-owner/profile" component={PropertyOwnerProfile} />
+      <Route path="/property-owner" component={PropertyOwnerDashboardNew} />
+      
+      {/* Legacy routes - keeping for backward compatibility */}
+      <Route path="/add-property" component={AddProperty} />
+      <Route path="/property-owner-dashboard" component={PropertyOwnerDashboard} />
       <Route path="/customer/login" component={CustomerLogin} />
       <Route path="/customer" component={CustomerDashboard} />
       {/* Fallback to 404 */}
