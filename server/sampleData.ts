@@ -1013,5 +1013,119 @@ export async function loadSampleData() {
     currency: "PKR"
   }));
 
-  console.log(`Sample data loaded successfully! Created ${properties.length} properties across ${cityPropertyCounts.size} cities and ${bookings.length} sample bookings.`);
+  // Create dummy vendor users and vendor profiles for testing
+  const vendorUser1 = await storage.createUser({
+    username: "ahmed_vendor",
+    email: "ahmed.hassan@example.com", 
+    password: "password123",
+    role: "property_owner",
+    fullName: "Ahmed Hassan",
+    phone: "+92300987654"
+  });
+
+  const vendorUser2 = await storage.createUser({
+    username: "sarah_vendor",
+    email: "sarah.khan@example.com",
+    password: "password123", 
+    role: "property_owner",
+    fullName: "Sarah Khan",
+    phone: "+92301234567"
+  });
+
+  const vendorUser3 = await storage.createUser({
+    username: "usman_vendor",
+    email: "usman.malik@example.com",
+    password: "password123",
+    role: "property_owner", 
+    fullName: "Usman Malik",
+    phone: "+92302345678"
+  });
+
+  const vendorUser4 = await storage.createUser({
+    username: "fatima_vendor",
+    email: "fatima.sheikh@example.com",
+    password: "password123",
+    role: "property_owner",
+    fullName: "Fatima Sheikh", 
+    phone: "+92303456789"
+  });
+
+  const vendorUser5 = await storage.createUser({
+    username: "ali_vendor",
+    email: "ali.ahmed@example.com",
+    password: "password123",
+    role: "property_owner",
+    fullName: "Ali Ahmed",
+    phone: "+92304567890"
+  });
+
+  // Create vendor profiles linked to users
+  const vendors = [];
+
+  vendors.push(await storage.createVendor({
+    userId: vendorUser1.id,
+    firstName: "Ahmed",
+    lastName: "Hassan",
+    phoneNo1: "+92300987654",
+    phoneNo2: "+92321111111",
+    cnic: "42101-1234567-1",
+    address: "House 123, Block A, Gulshan-e-Iqbal",
+    city: "Karachi",
+    country: "Pakistan",
+    status: "approved"
+  }));
+
+  vendors.push(await storage.createVendor({
+    userId: vendorUser2.id,
+    firstName: "Sarah",
+    lastName: "Khan",
+    phoneNo1: "+92301234567",
+    phoneNo2: "+92322222222",
+    cnic: "35202-2345678-2",
+    address: "Plot 456, DHA Phase 6", 
+    city: "Lahore",
+    country: "Pakistan",
+    status: "pending"
+  }));
+
+  vendors.push(await storage.createVendor({
+    userId: vendorUser3.id,
+    firstName: "Usman",
+    lastName: "Malik",
+    phoneNo1: "+92302345678",
+    phoneNo2: null,
+    cnic: "37405-3456789-3",
+    address: "Sector G-10, Markaz",
+    city: "Islamabad", 
+    country: "Pakistan",
+    status: "approved"
+  }));
+
+  vendors.push(await storage.createVendor({
+    userId: vendorUser4.id,
+    firstName: "Fatima",
+    lastName: "Sheikh",
+    phoneNo1: "+92303456789",
+    phoneNo2: "+92333333333",
+    cnic: "61101-4567890-4",
+    address: "Model Town B, Block 15",
+    city: "Faisalabad",
+    country: "Pakistan",
+    status: "pending"
+  }));
+
+  vendors.push(await storage.createVendor({
+    userId: vendorUser5.id,
+    firstName: "Ali", 
+    lastName: "Ahmed",
+    phoneNo1: "+92304567890",
+    phoneNo2: "+92344444444",
+    cnic: "37301-5678901-5",
+    address: "Committee Chowk, Satellite Town",
+    city: "Rawalpindi",
+    country: "Pakistan", 
+    status: "approved"
+  }));
+
+  console.log(`Sample data loaded successfully! Created ${properties.length} properties across ${cityPropertyCounts.size} cities, ${bookings.length} sample bookings, and ${vendors.length} vendor profiles.`);
 }
