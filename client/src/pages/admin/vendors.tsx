@@ -41,7 +41,9 @@ interface User {
   createdAt: string;
 }
 
-export default function AdminVendors() {
+import AdminLayout from "./layout";
+
+function VendorsContent() {
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"]
   });
@@ -289,5 +291,13 @@ export default function AdminVendors() {
         </Card>
       )}
     </div>
+  );
+}
+
+export default function AdminVendors() {
+  return (
+    <AdminLayout>
+      <VendorsContent />
+    </AdminLayout>
   );
 }

@@ -24,7 +24,9 @@ interface Booking {
   createdAt: string;
 }
 
-export default function AdminBookings() {
+import AdminLayout from "./layout";
+
+function BookingsContent() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -193,5 +195,13 @@ export default function AdminBookings() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function AdminBookings() {
+  return (
+    <AdminLayout>
+      <BookingsContent />
+    </AdminLayout>
   );
 }

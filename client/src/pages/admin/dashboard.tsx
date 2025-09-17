@@ -21,7 +21,9 @@ interface DashboardStats {
   recentUsers: any[];
 }
 
-export default function AdminDashboard() {
+import AdminLayout from "./layout";
+
+function DashboardContent() {
   const { data: users = [] } = useQuery<any[]>({
     queryKey: ["/api/admin/users"]
   });
@@ -269,5 +271,13 @@ export default function AdminDashboard() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function AdminDashboard() {
+  return (
+    <AdminLayout>
+      <DashboardContent />
+    </AdminLayout>
   );
 }

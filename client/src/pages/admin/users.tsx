@@ -27,7 +27,9 @@ interface User {
   createdAt: string;
 }
 
-export default function AdminUsers() {
+import AdminLayout from "./layout";
+
+function UsersContent() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -270,5 +272,13 @@ export default function AdminUsers() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function AdminUsers() {
+  return (
+    <AdminLayout>
+      <UsersContent />
+    </AdminLayout>
   );
 }

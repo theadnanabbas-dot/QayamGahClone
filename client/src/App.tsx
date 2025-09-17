@@ -15,6 +15,11 @@ import PropertyOwnerDashboard from "@/pages/property-owner-dashboard";
 import CustomerLogin from "@/pages/customer-login";
 import CustomerDashboard from "@/pages/customer-dashboard";
 import AddProperty from "@/pages/add-property";
+import AdminDashboard from "@/pages/admin/dashboard";
+import AdminBookings from "@/pages/admin/bookings";
+import AdminUsers from "@/pages/admin/users";
+import AdminVendors from "@/pages/admin/vendors";
+import AdminTransactions from "@/pages/admin/transactions";
 
 function Router() {
   return (
@@ -24,6 +29,11 @@ function Router() {
       <Route path="/property-details/:slug" component={PropertyDetails} />
       <Route path="/hotels" component={HotelsListing} />
       <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/bookings" component={AdminBookings} />
+      <Route path="/admin/users" component={AdminUsers} />
+      <Route path="/admin/vendors" component={AdminVendors} />
+      <Route path="/admin/transactions" component={AdminTransactions} />
       <Route path="/admin" component={AdminPanel} />
       <Route path="/property-owner/login" component={PropertyOwnerLogin} />
       <Route path="/property-owner/add-property" component={AddProperty} />

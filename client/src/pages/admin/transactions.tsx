@@ -24,7 +24,9 @@ interface Booking {
   createdAt: string;
 }
 
-export default function AdminTransactions() {
+import AdminLayout from "./layout";
+
+function TransactionsContent() {
   const { data: bookings = [], isLoading } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"]
   });
@@ -260,5 +262,10 @@ export default function AdminTransactions() {
   );
 }
 
-// Add missing Clock import
-import { Clock } from "lucide-react";
+export default function AdminTransactions() {
+  return (
+    <AdminLayout>
+      <TransactionsContent />
+    </AdminLayout>
+  );
+}

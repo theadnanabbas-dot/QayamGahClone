@@ -34,6 +34,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { Link, useLocation } from "wouter";
+import AdminSidebar from "@/components/AdminSidebar";
+import AdminDashboard from "@/pages/admin/dashboard";
 
 // Types
 interface User {
@@ -815,7 +817,7 @@ function UserManagement() {
 }
 
 export default function AdminPanel() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -857,6 +859,13 @@ export default function AdminPanel() {
     checkAuth();
   }, [setLocation]);
 
+  // Redirect /admin to /admin/dashboard  
+  useEffect(() => {
+    if (location === "/admin" && user && !isLoading) {
+      setLocation("/admin/dashboard");
+    }
+  }, [location, user, isLoading, setLocation]);
+
   const handleLogout = () => {
     localStorage.removeItem("admin_token");
     localStorage.removeItem("admin_user");
@@ -879,49 +888,17 @@ export default function AdminPanel() {
     );
   }
 
+  // Layout wrapper for admin routes with sidebar
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <AdminHeader user={user} onLogout={handleLogout} />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Admin Dashboard
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Manage bookings, properties, and users
-          </p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+      <AdminSidebar user={user} onLogout={handleLogout} />
+      <main className="flex-1 overflow-auto">
+        <div className="p-8">
+          {/* Show dashboard for main /admin route */}
+          {location === "/admin" && <AdminDashboard />}
+          {/* Content for other routes is handled by individual route components */}
         </div>
-
-        <Tabs defaultValue="bookings" className="space-y-6" data-testid="admin-tabs">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="bookings" className="flex items-center gap-2" data-testid="tab-bookings">
-              <Calendar className="h-4 w-4" />
-              Bookings
-            </TabsTrigger>
-            <TabsTrigger value="properties" className="flex items-center gap-2" data-testid="tab-properties">
-              <Building2 className="h-4 w-4" />
-              Properties
-            </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2" data-testid="tab-users">
-              <Users className="h-4 w-4" />
-              Users
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="bookings">
-            <BookingsManagement />
-          </TabsContent>
-
-          <TabsContent value="properties">
-            <PropertyManagement />
-          </TabsContent>
-
-          <TabsContent value="users">
-            <UserManagement />
-          </TabsContent>
-        </Tabs>
-      </div>
+      </main>
     </div>
   );
 }
