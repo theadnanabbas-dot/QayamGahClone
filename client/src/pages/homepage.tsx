@@ -1,10 +1,43 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { MapPin, Star, Users, Building, Home, Calendar, Phone, Mail, Clock } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { MapPin, Star, Users, Building, Home, Calendar, Phone, Mail, Clock, Eye, EyeOff, Plus } from "lucide-react";
 import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+
+// Vendor Registration Schemas
+const signupSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const personalDetailsSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  phoneNo1: z.string().min(10, "Phone number must be at least 10 digits"),
+  phoneNo2: z.string().optional(),
+  cnic: z.string().min(13, "CNIC must be at least 13 digits"),
+  address: z.string().min(10, "Address must be at least 10 characters"),
+  city: z.string().min(1, "City is required"),
+  country: z.string().min(1, "Country is required"),
+  agreeToTerms: z.boolean().refine(val => val === true, {
+    message: "You must agree to the Terms & Conditions"
+  })
+});
+
+type SignupFormData = z.infer<typeof signupSchema>;
+type PersonalDetailsFormData = z.infer<typeof personalDetailsSchema>;
 
 // Types from our schema
 interface City {
@@ -95,6 +128,13 @@ function Header() {
                 <span>info@qayamgah.com</span>
               </div>
             </div>
+            <Button 
+              onClick={() => setShowVendorModal(true)}
+              className="bg-primary hover:bg-primary/90 text-white"
+              data-testid="button-register-owner"
+            >
+              Register as Owner
+            </Button>
           </div>
         </div>
       </div>
