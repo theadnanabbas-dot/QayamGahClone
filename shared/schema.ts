@@ -91,6 +91,22 @@ export const testimonials = pgTable("testimonials", {
   rating: integer("rating").notNull().default(5),
 });
 
+export const vendors = pgTable("vendors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  phoneNo1: text("phone_no_1").notNull(),
+  phoneNo2: text("phone_no_2"),
+  cnic: text("cnic").notNull(),
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  country: text("country").notNull().default("Pakistan"),
+  status: text("status").notNull().default("pending"), // "pending", "approved", "rejected"
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  approvedAt: timestamp("approved_at"),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   passwordHash: true,
@@ -138,6 +154,14 @@ export const insertTestimonialSchema = createInsertSchema(testimonials).omit({
   id: true,
 });
 
+export const insertVendorSchema = createInsertSchema(vendors).omit({
+  id: true,
+  createdAt: true,
+  approvedAt: true,
+}).extend({
+  status: z.enum(["pending", "approved", "rejected"]).default("pending"),
+});
+
 export const insertBookingSchema = createInsertSchema(bookings).omit({
   id: true,
   createdAt: true,
@@ -153,6 +177,11 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({
 export const updateBookingStatusSchema = z.object({
   id: z.string(),
   status: z.enum(["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"]),
+});
+
+export const updateVendorStatusSchema = z.object({
+  id: z.string(),
+  status: z.enum(["pending", "approved", "rejected"]),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -176,3 +205,6 @@ export type Testimonial = typeof testimonials.$inferSelect;
 
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
 export type Booking = typeof bookings.$inferSelect;
+
+export type InsertVendor = z.infer<typeof insertVendorSchema>;
+export type Vendor = typeof vendors.$inferSelect;

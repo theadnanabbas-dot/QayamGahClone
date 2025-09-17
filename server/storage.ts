@@ -13,7 +13,9 @@ import {
   type Testimonial,
   type InsertTestimonial,
   type Booking,
-  type InsertBooking
+  type InsertBooking,
+  type Vendor,
+  type InsertVendor
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -81,6 +83,14 @@ export interface IStorage {
   isPropertyAvailable(propertyId: string, startAt: Date, endAt: Date, excludeBookingId?: string): Promise<boolean>;
   getBookingsForProperty(propertyId: string, startAt?: Date, endAt?: Date): Promise<Booking[]>;
   calculateBookingPrice(propertyId: string, startAt: Date, endAt: Date): Promise<{ totalPrice: number; hours: number } | null>;
+  
+  // Vendors
+  getVendors(): Promise<Vendor[]>;
+  getVendor(id: string): Promise<Vendor | undefined>;
+  getVendorByUserId(userId: string): Promise<Vendor | undefined>;
+  createVendor(vendor: InsertVendor): Promise<Vendor>;
+  updateVendorStatus(id: string, status: string): Promise<Vendor | undefined>;
+  deleteVendor(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -91,6 +101,7 @@ export class MemStorage implements IStorage {
   private blogs: Map<string, Blog>;
   private testimonials: Map<string, Testimonial>;
   private bookings: Map<string, Booking>;
+  private vendors: Map<string, Vendor>;
 
   constructor() {
     this.users = new Map();
@@ -100,6 +111,7 @@ export class MemStorage implements IStorage {
     this.blogs = new Map();
     this.testimonials = new Map();
     this.bookings = new Map();
+    this.vendors = new Map();
   }
 
   // Users
@@ -596,6 +608,52 @@ export class MemStorage implements IStorage {
     };
     this.bookings.set(id, booking);
     return booking;
+  }
+
+  // Vendors
+  async getVendors(): Promise<Vendor[]> {
+    return Array.from(this.vendors.values());
+  }
+
+  async getVendor(id: string): Promise<Vendor | undefined> {
+    return this.vendors.get(id);
+  }
+
+  async getVendorByUserId(userId: string): Promise<Vendor | undefined> {
+    return Array.from(this.vendors.values()).find(
+      (vendor) => vendor.userId === userId,
+    );
+  }
+
+  async createVendor(insertVendor: InsertVendor): Promise<Vendor> {
+    const id = randomUUID();
+    const vendor: Vendor = {
+      ...insertVendor,
+      id,
+      phoneNo2: insertVendor.phoneNo2 ?? null,
+      country: insertVendor.country ?? "Pakistan",
+      createdAt: new Date(),
+      approvedAt: null,
+    };
+    this.vendors.set(id, vendor);
+    return vendor;
+  }
+
+  async updateVendorStatus(id: string, status: string): Promise<Vendor | undefined> {
+    const vendor = this.vendors.get(id);
+    if (!vendor) return undefined;
+
+    const updatedVendor: Vendor = {
+      ...vendor,
+      status,
+      approvedAt: status === "approved" ? new Date() : null,
+    };
+    this.vendors.set(id, updatedVendor);
+    return updatedVendor;
+  }
+
+  async deleteVendor(id: string): Promise<boolean> {
+    return this.vendors.delete(id);
   }
 }
 
