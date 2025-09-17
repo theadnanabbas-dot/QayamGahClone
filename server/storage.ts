@@ -627,9 +627,12 @@ export class MemStorage implements IStorage {
   }
 
   async getVendorByEmail(email: string): Promise<Vendor | undefined> {
-    return Array.from(this.vendors.values()).find(
-      (vendor) => vendor.email === email,
-    );
+    // First find the user by email
+    const user = await this.getUserByEmail(email);
+    if (!user) return undefined;
+    
+    // Then find the vendor by user ID
+    return this.getVendorByUserId(user.id);
   }
 
   async createVendor(insertVendor: InsertVendor): Promise<Vendor> {

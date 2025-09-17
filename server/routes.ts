@@ -204,20 +204,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Property Owner login endpoint
   app.post("/api/auth/property-owner-login", async (req, res) => {
     try {
-      const { email, password } = req.body;
-
-      if (!email || !password) {
-        return res
-          .status(400)
-          .json({ message: "Email and password are required" });
-      }
-
-      // Demo property owner credentials
+      // Demo property owner credentials - check first before validation
       const demoOwnerEmail = "owner@qayamgah.com";
       const demoOwnerPassword = "owner123";
 
-      // Check for demo property owner credentials
-      if (email === demoOwnerEmail && password === demoOwnerPassword) {
+      if (req.body.email === demoOwnerEmail && req.body.password === demoOwnerPassword) {
         const ownerUser = {
           id: "owner-001",
           email: demoOwnerEmail,
@@ -236,28 +227,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check vendors table for property owner authentication
-      const vendor = await storage.getVendorByEmail(email);
+      // Validate request body using loginUserSchema
+      const { email, password } = loginUserSchema.parse(req.body);
+
+      // First, authenticate the user in the users table
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid property owner credentials" });
+      }
+
+      // Verify user is active
+      if (!user.isActive) {
+        return res.status(403).json({ message: "Property owner account is deactivated" });
+      }
+
+      // Verify user has correct role
+      if (user.role !== "property_owner") {
+        return res.status(401).json({ message: "Invalid property owner credentials" });
+      }
+
+      // Verify password hash matches (same pattern as other auth endpoints)
+      if (user.passwordHash !== `hashed_${password}`) {
+        return res.status(401).json({ message: "Invalid property owner credentials" });
+      }
+
+      // Get vendor record for this user
+      const vendor = await storage.getVendorByUserId(user.id);
       if (!vendor) {
-        return res
-          .status(401)
-          .json({ message: "Invalid property owner credentials" });
+        return res.status(403).json({ 
+          message: "No vendor profile found. Please contact the administrator." 
+        });
       }
 
       // Only approved vendors can log in
       if (vendor.status !== "approved") {
-        return res
-          .status(403)
-          .json({ message: "Your account is pending approval. Please contact the administrator." });
-      }
-
-      // Note: In a real app, you'd verify the hashed password here
-      // For now, we'll use a simple password check
-      const expectedPassword = "owner123"; // In production, this would be properly hashed
-      if (password !== expectedPassword) {
-        return res
-          .status(401)
-          .json({ message: "Invalid property owner credentials" });
+        return res.status(403).json({ 
+          message: "Your account is pending approval. Please contact the administrator." 
+        });
       }
 
       // Generate a simple token (in production, use JWT)
@@ -266,17 +272,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         user: {
-          id: vendor.id,
-          email: vendor.email,
-          role: "property_owner",
-          fullName: vendor.fullName,
-          businessName: vendor.businessName,
-          status: vendor.status
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          fullName: user.fullName,
+          username: user.username,
+          vendorId: vendor.id,
+          vendorStatus: vendor.status,
+          businessName: `${vendor.firstName} ${vendor.lastName}`
         },
         token,
       });
     } catch (error: any) {
       console.error("Property owner login error:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
       res.status(500).json({ message: "Internal server error" });
     }
   });
