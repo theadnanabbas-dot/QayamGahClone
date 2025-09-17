@@ -540,6 +540,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Vendor login endpoint
+  app.post("/api/vendor/login", async (req, res) => {
+    try {
+      // Validate request body using loginUserSchema
+      const { email, password } = loginUserSchema.parse(req.body);
+
+      // First, authenticate the user in the users table
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "Invalid email or password" 
+        });
+      }
+
+      // Verify password hash matches (same pattern as other auth endpoints)
+      if (user.passwordHash !== `hashed_${password}`) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "Invalid email or password" 
+        });
+      }
+
+      // Get vendor record for this user
+      const vendor = await storage.getVendorByUserId(user.id);
+      if (!vendor) {
+        return res.status(403).json({ 
+          success: false,
+          message: "No vendor profile found. Please contact the administrator." 
+        });
+      }
+
+      // Check vendor status
+      if (vendor.status === "pending") {
+        return res.status(403).json({ 
+          success: false,
+          message: "Your account is pending approval.",
+          vendor: { status: vendor.status }
+        });
+      } else if (vendor.status === "rejected") {
+        return res.status(403).json({ 
+          success: false,
+          message: "Your account has been rejected. Please contact the administrator.",
+          vendor: { status: vendor.status }
+        });
+      } else if (vendor.status !== "approved") {
+        return res.status(403).json({ 
+          success: false,
+          message: "Your account status does not allow login.",
+          vendor: { status: vendor.status }
+        });
+      }
+
+      // Verify user is active
+      if (!user.isActive) {
+        return res.status(403).json({ 
+          success: false,
+          message: "Your account is deactivated. Please contact the administrator." 
+        });
+      }
+
+      // Generate a simple token (in production, use JWT)
+      const token = `vendor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      res.json({
+        success: true,
+        message: "Login successful",
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          fullName: user.fullName,
+        },
+        vendor: {
+          id: vendor.id,
+          status: vendor.status,
+          firstName: vendor.firstName,
+          lastName: vendor.lastName,
+        },
+        token,
+      });
+    } catch (error: any) {
+      console.error("Vendor login error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Internal server error" 
+      });
+    }
+  });
+
   app.patch("/api/admin/users/:id/status", async (req, res) => {
     try {
       const { isActive } = req.body;
