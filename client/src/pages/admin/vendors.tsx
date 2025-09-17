@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -51,6 +52,21 @@ const personalDetailsSchema = z.object({
 
 type SignupFormData = z.infer<typeof signupSchema>;
 type PersonalDetailsFormData = z.infer<typeof personalDetailsSchema>;
+
+// Edit Vendor Schema
+const editVendorSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  phoneNo1: z.string().min(10, "Phone number must be at least 10 digits"),
+  phoneNo2: z.string().optional(),
+  cnic: z.string().min(13, "CNIC must be at least 13 digits"),
+  address: z.string().min(10, "Address must be at least 10 characters"),
+  city: z.string().min(1, "City is required"),
+  country: z.string().min(1, "Country is required"),
+  status: z.enum(["pending", "approved", "rejected"])
+});
+
+type EditVendorFormData = z.infer<typeof editVendorSchema>;
 
 interface Property {
   id: string;
@@ -507,6 +523,427 @@ function VendorRegistrationModal({
             </Button>
           </div>
         )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// View Vendor Details Modal Component
+function ViewVendorModal({ 
+  isOpen, 
+  onClose, 
+  vendor, 
+  user 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  vendor: Vendor | null;
+  user: User | null;
+}) {
+  if (!vendor) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md" data-testid="modal-view-vendor">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Vendor Details</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              data-testid="button-close-view-vendor"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4" data-testid="vendor-details">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">First Name</label>
+              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1" data-testid="view-first-name">
+                {vendor.firstName}
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Last Name</label>
+              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1" data-testid="view-last-name">
+                {vendor.lastName}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+            <p className="text-sm text-gray-900 dark:text-gray-100 mt-1" data-testid="view-email">
+              {user?.email || "No email"}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone No. 1</label>
+              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1" data-testid="view-phone-1">
+                {vendor.phoneNo1}
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone No. 2</label>
+              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1" data-testid="view-phone-2">
+                {vendor.phoneNo2 || "Not provided"}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">CNIC / National ID</label>
+            <p className="text-sm text-gray-900 dark:text-gray-100 mt-1" data-testid="view-cnic">
+              {vendor.cnic}
+            </p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Address</label>
+            <p className="text-sm text-gray-900 dark:text-gray-100 mt-1" data-testid="view-address">
+              {vendor.address}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">City</label>
+              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1" data-testid="view-city">
+                {vendor.city}
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Country</label>
+              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1" data-testid="view-country">
+                {vendor.country}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+            <div className="mt-1">
+              <Badge 
+                variant={vendor.status === "approved" ? "default" : vendor.status === "pending" ? "secondary" : "destructive"}
+                className={
+                  vendor.status === "approved" 
+                    ? "bg-green-500 hover:bg-green-600" 
+                    : vendor.status === "pending"
+                    ? "bg-yellow-500 hover:bg-yellow-600"
+                    : "bg-red-500 hover:bg-red-600"
+                }
+                data-testid="view-status"
+              >
+                {vendor.status.charAt(0).toUpperCase() + vendor.status.slice(1)}
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Edit Vendor Details Modal Component
+function EditVendorModal({ 
+  isOpen, 
+  onClose, 
+  vendor, 
+  user 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  vendor: Vendor | null;
+  user: User | null;
+}) {
+  const { toast } = useToast();
+
+  const editForm = useForm<EditVendorFormData>({
+    resolver: zodResolver(editVendorSchema),
+    defaultValues: {
+      firstName: vendor?.firstName || "",
+      lastName: vendor?.lastName || "",
+      phoneNo1: vendor?.phoneNo1 || "",
+      phoneNo2: vendor?.phoneNo2 || "",
+      cnic: vendor?.cnic || "",
+      address: vendor?.address || "",
+      city: vendor?.city || "",
+      country: vendor?.country || "",
+      status: (vendor?.status as "pending" | "approved" | "rejected") || "pending"
+    },
+  });
+
+  // Update vendor mutation
+  const updateVendorMutation = useMutation({
+    mutationFn: async (data: EditVendorFormData) => {
+      if (!vendor) throw new Error("No vendor selected");
+      const response = await apiRequest("PATCH", `/api/vendors/${vendor.id}`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success!",
+        description: "Vendor details updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
+      onClose();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update vendor details.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (data: EditVendorFormData) => {
+    updateVendorMutation.mutate(data);
+  };
+
+  const handleDiscard = () => {
+    editForm.reset();
+    onClose();
+  };
+
+  if (!vendor) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleDiscard}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" data-testid="modal-edit-vendor">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Edit Vendor Details</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDiscard}
+              data-testid="button-close-edit-vendor"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4" data-testid="edit-vendor-form">
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(handleSubmit)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="First Name"
+                          data-testid="input-edit-first-name"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Last Name"
+                          data-testid="input-edit-last-name"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 p-2 bg-gray-50 dark:bg-gray-800 rounded" data-testid="edit-email-readonly">
+                  {user?.email || "No email"} (Read-only)
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="phoneNo1"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone No. 1 *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Primary phone number"
+                          data-testid="input-edit-phone-1"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="phoneNo2"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone No. 2 (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Secondary phone number"
+                          data-testid="input-edit-phone-2"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={editForm.control}
+                name="cnic"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CNIC / National Identity No. *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="XXXXX-XXXXXXX-X"
+                        data-testid="input-edit-cnic"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={editForm.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Complete address"
+                        data-testid="input-edit-address"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="City"
+                          data-testid="input-edit-city"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Country"
+                          data-testid="input-edit-country"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={editForm.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-edit-status">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="pending" data-testid="status-option-pending">Pending</SelectItem>
+                        <SelectItem value="approved" data-testid="status-option-approved">Approved</SelectItem>
+                        <SelectItem value="rejected" data-testid="status-option-rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex items-center space-x-3 pt-4">
+                <Button 
+                  type="button"
+                  variant="outline"
+                  onClick={handleDiscard}
+                  className="flex-1"
+                  disabled={updateVendorMutation.isPending}
+                  data-testid="button-discard-vendor"
+                >
+                  Discard
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="flex-1"
+                  disabled={updateVendorMutation.isPending}
+                  data-testid="button-save-vendor"
+                >
+                  {updateVendorMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );
