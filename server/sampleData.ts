@@ -915,5 +915,103 @@ export async function loadSampleData() {
     image: "/api/images/blog/islamabad-infrastructure.jpg"
   });
 
-  console.log(`Sample data loaded successfully! Created ${properties.length} properties across ${cityPropertyCounts.size} cities.`);
+  // Create customer users for bookings
+  const customer1 = await storage.createUser({
+    username: "ahmed_customer",
+    email: "ahmed@example.com",
+    password: "password123",
+    role: "customer",
+    fullName: "Ahmed Hassan",
+    phone: "+92300123456"
+  });
+
+  const customer2 = await storage.createUser({
+    username: "fatima_customer", 
+    email: "fatima@example.com",
+    password: "password123",
+    role: "customer",
+    fullName: "Fatima Khan",
+    phone: "+92301234567"
+  });
+
+  const customer3 = await storage.createUser({
+    username: "ali_customer",
+    email: "ali@example.com", 
+    password: "password123",
+    role: "customer",
+    fullName: "Ali Shah",
+    phone: "+92302345678"
+  });
+
+  // Create some dummy bookings for testing
+  const customers = [customer1, customer2, customer3];
+  const bookings = [];
+
+  // Near future booking - can be marked as completed later
+  bookings.push(await storage.createBooking({
+    propertyId: properties[0].id,
+    userId: customers[0].id,
+    startAt: new Date(Date.now() + 3600000 * 2), // 2 hours from now
+    endAt: new Date(Date.now() + 3600000 * 6), // 6 hours from now
+    paymentMethod: "card",
+    status: "CONFIRMED",
+    currency: "PKR"
+  }));
+
+  // Current booking - confirmed  
+  bookings.push(await storage.createBooking({
+    propertyId: properties[1].id,
+    userId: customers[1].id,
+    startAt: new Date(Date.now() + 3600000 * 8), // 8 hours from now
+    endAt: new Date(Date.now() + 3600000 * 12), // 12 hours from now
+    paymentMethod: "jazzcash",
+    status: "CONFIRMED",
+    currency: "PKR"
+  }));
+
+  // Future booking - pending
+  bookings.push(await storage.createBooking({
+    propertyId: properties[2].id,
+    userId: customers[2].id,
+    startAt: new Date(Date.now() + 86400000), // 1 day from now
+    endAt: new Date(Date.now() + 86400000 + 3600000 * 8), // 8 hours later
+    paymentMethod: "cash",
+    status: "PENDING",
+    currency: "PKR"
+  }));
+
+  // Another confirmed booking
+  bookings.push(await storage.createBooking({
+    propertyId: properties[3].id,
+    userId: customers[0].id,
+    startAt: new Date(Date.now() + 86400000 * 3), // 3 days from now
+    endAt: new Date(Date.now() + 86400000 * 3 + 3600000 * 3), // 3 hours later (meets minHours requirement)
+    paymentMethod: "bank_transfer",
+    status: "CONFIRMED",
+    currency: "PKR"
+  }));
+
+  // Cancelled booking
+  bookings.push(await storage.createBooking({
+    propertyId: properties[4].id,
+    userId: customers[1].id,
+    startAt: new Date(Date.now() + 86400000 * 5), // 5 days from now
+    endAt: new Date(Date.now() + 86400000 * 5 + 3600000 * 3), // 3 hours later
+    paymentMethod: "easypaisa",
+    status: "CANCELLED",
+    currency: "PKR"
+  }));
+
+  // Additional pending booking
+  bookings.push(await storage.createBooking({
+    propertyId: properties[5].id,
+    userId: customers[2].id,
+    startAt: new Date(Date.now() + 86400000 * 7), // 7 days from now
+    endAt: new Date(Date.now() + 86400000 * 7 + 3600000 * 5), // 5 hours later
+    paymentMethod: "card",
+    status: "PENDING",
+    currency: "PKR"
+  }));
+
+  console.log(`Sample data loaded successfully! Created ${properties.length} properties across ${cityPropertyCounts.size} cities and ${bookings.length} sample bookings.`);
 }
