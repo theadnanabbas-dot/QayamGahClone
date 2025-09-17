@@ -780,6 +780,7 @@ function VendorRegistrationModal({
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [signupData, setSignupData] = useState<any>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const { toast } = useToast();
 
   // Step 1: Signup Form
@@ -985,9 +986,13 @@ function VendorRegistrationModal({
 
             <p className="text-center text-sm text-gray-600">
               Already have an account?{" "}
-              <a href="/login" className="text-primary hover:underline">
+              <button 
+                onClick={() => setShowLoginModal(true)} 
+                className="text-primary hover:underline"
+                data-testid="button-open-login"
+              >
                 Log in
-              </a>
+              </button>
             </p>
           </div>
         )}
@@ -1197,6 +1202,175 @@ function VendorRegistrationModal({
             </Button>
           </div>
         )}
+
+        {/* Vendor Login Modal */}
+        <VendorLoginModal 
+          isOpen={showLoginModal} 
+          onClose={() => setShowLoginModal(false)} 
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Vendor Login Modal Component
+function VendorLoginModal({ 
+  isOpen, 
+  onClose 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+}) {
+  const [showPassword, setShowPassword] = useState(false);
+  const { toast } = useToast();
+
+  // Login form schema
+  const loginSchema = z.object({
+    email: z.string().email("Please enter a valid email address"),
+    password: z.string().min(1, "Password is required"),
+  });
+
+  type LoginFormData = z.infer<typeof loginSchema>;
+
+  const loginForm = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  // Login mutation
+  const loginMutation = useMutation({
+    mutationFn: async (data: LoginFormData) => {
+      const response = await apiRequest("POST", "/api/vendor/login", data);
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        // Check vendor status
+        if (data.vendor?.status === "pending") {
+          toast({
+            title: "Account Pending",
+            description: "Your account is pending approval.",
+            variant: "destructive",
+          });
+        } else if (data.vendor?.status === "approved") {
+          toast({
+            title: "Login Successful!",
+            description: "Redirecting to property owner dashboard...",
+          });
+          onClose();
+          // TODO: Redirect to property owner dashboard
+          window.location.href = "/dashboard";
+        } else {
+          toast({
+            title: "Access Denied",
+            description: "Your account status does not allow login.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Login Failed",
+          description: "Invalid email or password.",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Invalid email or password.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleLoginSubmit = (data: LoginFormData) => {
+    loginMutation.mutate(data);
+  };
+
+  const handleClose = () => {
+    loginForm.reset();
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md" data-testid="modal-vendor-login">
+        <DialogHeader>
+          <DialogTitle>Vendor Login</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4" data-testid="form-vendor-login">
+          <Form {...loginForm}>
+            <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
+              <FormField
+                control={loginForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="email"
+                        placeholder="Enter your email"
+                        data-testid="input-login-email"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={loginForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password *</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter your password"
+                          data-testid="input-login-password"
+                          {...field}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                          data-testid="button-toggle-login-password"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={loginMutation.isPending}
+                data-testid="button-login-submit"
+              >
+                {loginMutation.isPending ? "Logging in..." : "Log In"}
+              </Button>
+            </form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );
