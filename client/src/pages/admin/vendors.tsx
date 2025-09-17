@@ -53,8 +53,21 @@ const personalDetailsSchema = z.object({
 type SignupFormData = z.infer<typeof signupSchema>;
 type PersonalDetailsFormData = z.infer<typeof personalDetailsSchema>;
 
-// Edit Vendor Schema
-const editVendorSchema = z.object({
+// Import shared schema for consistency and extend for UI validation
+import { updateVendorSchema as baseUpdateVendorSchema } from "@shared/schema";
+
+// Edit Vendor Schema - precise shape aligned with backend expectations
+const editVendorSchema = baseUpdateVendorSchema.pick({
+  firstName: true,
+  lastName: true,
+  phoneNo1: true,
+  phoneNo2: true,
+  cnic: true,
+  address: true,
+  city: true,
+  country: true,
+  status: true
+}).extend({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   phoneNo1: z.string().min(10, "Phone number must be at least 10 digits"),
