@@ -3,13 +3,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Calendar,
   CheckCircle, 
   XCircle, 
   Clock,
-  Loader2
+  Loader2,
+  MoreHorizontal,
+  Eye,
+  Edit,
+  Trash2,
+  CreditCard,
+  Banknote,
+  Building
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -20,6 +33,7 @@ interface Booking {
   startAt: string;
   endAt: string;
   totalPrice: string;
+  paymentMethod: string;
   status: string;
   createdAt: string;
 }
@@ -61,6 +75,50 @@ function BookingsContent() {
       case "COMPLETED": return "bg-blue-500";
       default: return "bg-gray-500";
     }
+  };
+
+  const getPaymentMethodIcon = (method: string) => {
+    switch (method) {
+      case "card": return <CreditCard className="h-4 w-4" />;
+      case "cash": return <Banknote className="h-4 w-4" />;
+      case "bank_transfer": return <Building className="h-4 w-4" />;
+      case "jazzcash":
+      case "easypaisa": return <CreditCard className="h-4 w-4" />;
+      default: return <Banknote className="h-4 w-4" />;
+    }
+  };
+
+  const formatPaymentMethod = (method: string) => {
+    switch (method) {
+      case "card": return "Credit/Debit Card";
+      case "cash": return "Cash";
+      case "bank_transfer": return "Bank Transfer";
+      case "jazzcash": return "JazzCash";
+      case "easypaisa": return "EasyPaisa";
+      default: return method.charAt(0).toUpperCase() + method.slice(1);
+    }
+  };
+
+  const handleViewDetails = (booking: Booking) => {
+    toast({
+      title: "Booking Details",
+      description: `Viewing details for booking ${booking.id.slice(0, 8)}...`
+    });
+  };
+
+  const handleEditBooking = (booking: Booking) => {
+    toast({
+      title: "Edit Booking",
+      description: `Editing booking ${booking.id.slice(0, 8)}...`
+    });
+  };
+
+  const handleDeleteBooking = (booking: Booking) => {
+    toast({
+      title: "Delete Booking",
+      description: `Delete booking ${booking.id.slice(0, 8)}...`,
+      variant: "destructive"
+    });
   };
 
   if (isLoading) {
@@ -107,6 +165,7 @@ function BookingsContent() {
                   <TableHead>Customer</TableHead>
                   <TableHead>Date & Time</TableHead>
                   <TableHead>Total</TableHead>
+                  <TableHead>Payment Method</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -131,59 +190,50 @@ function BookingsContent() {
                       Rs. {booking.totalPrice}
                     </TableCell>
                     <TableCell>
+                      <div className="flex items-center space-x-2">
+                        {getPaymentMethodIcon(booking.paymentMethod || 'cash')}
+                        <span className="text-sm">
+                          {formatPaymentMethod(booking.paymentMethod || 'cash')}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <Badge className={`${getStatusColor(booking.status)} text-white`}>
                         {booking.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-2">
-                        {booking.status === "PENDING" && (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={() => updateBookingMutation.mutate({ 
-                                bookingId: booking.id, 
-                                status: "CONFIRMED" 
-                              })}
-                              disabled={updateBookingMutation.isPending}
-                              data-testid={`button-confirm-${booking.id}`}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => updateBookingMutation.mutate({ 
-                                bookingId: booking.id, 
-                                status: "CANCELLED" 
-                              })}
-                              disabled={updateBookingMutation.isPending}
-                              data-testid={`button-cancel-${booking.id}`}
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                        {booking.status === "CONFIRMED" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateBookingMutation.mutate({ 
-                              bookingId: booking.id, 
-                              status: "COMPLETED" 
-                            })}
-                            disabled={updateBookingMutation.isPending}
-                            data-testid={`button-complete-${booking.id}`}
-                          >
-                            <Clock className="h-4 w-4" />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0" data-testid={`actions-${booking.id}`}>
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
-                        )}
-                      </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewDetails(booking)} data-testid={`action-details-${booking.id}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditBooking(booking)} data-testid={`action-edit-${booking.id}`}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteBooking(booking)} 
+                            className="text-red-600"
+                            data-testid={`action-delete-${booking.id}`}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <TableCell colSpan={8} className="text-center py-8 text-gray-500 dark:text-gray-400">
                       <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>No bookings found</p>
                     </TableCell>
