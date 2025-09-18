@@ -323,6 +323,53 @@ function CalendarContent() {
     return [...localBookings, ...externalEvents];
   };
 
+  // Conflict detection functions
+  const doEventsOverlap = (event1: any, event2: any) => {
+    const start1 = new Date(event1.startAt);
+    const end1 = new Date(event1.endAt);
+    const start2 = new Date(event2.startAt);
+    const end2 = new Date(event2.endAt);
+    
+    // Events overlap if: start1 < end2 AND start2 < end1
+    return start1 < end2 && start2 < end1;
+  };
+
+  const detectConflicts = (events: any[]) => {
+    const conflicts = new Set<string>();
+    
+    for (let i = 0; i < events.length; i++) {
+      for (let j = i + 1; j < events.length; j++) {
+        const event1 = events[i];
+        const event2 = events[j];
+        
+        // Check if events overlap in time
+        if (doEventsOverlap(event1, event2)) {
+          // For local bookings, also check if they're for the same property/room
+          if (event1.type === 'local' && event2.type === 'local') {
+            // Same room category = definite conflict
+            if (event1.roomCategoryId === event2.roomCategoryId) {
+              conflicts.add(event1.id);
+              conflicts.add(event2.id);
+            }
+          } else {
+            // If one is imported, treat as potential conflict due to time overlap
+            conflicts.add(event1.id);
+            conflicts.add(event2.id);
+          }
+        }
+      }
+    }
+    
+    return conflicts;
+  };
+
+  const getConflictStyling = (eventId: string, conflicts: Set<string>, baseStyle: string) => {
+    if (conflicts.has(eventId)) {
+      return `${baseStyle} ring-2 ring-red-500 bg-red-50 border-red-300`;
+    }
+    return baseStyle;
+  };
+
   // Get property name via room category
   const getPropertyName = (roomCategoryId: string) => {
     const roomCategory = roomCategories.find(rc => rc.id === roomCategoryId);
@@ -831,6 +878,8 @@ function CalendarContent() {
               <div className="grid grid-cols-7 gap-2">
                 {calendarDays.map((date, index) => {
                   const dayEvents = getAllEventsForDate(date);
+                  const conflicts = detectConflicts(dayEvents);
+                  const hasConflicts = conflicts.size > 0;
                   const isCurrentMonth = date.getMonth() === currentDate.getMonth();
                   const isToday = date.toDateString() === new Date().toDateString();
                   
@@ -844,17 +893,28 @@ function CalendarContent() {
                       } ${isToday ? 'ring-2 ring-blue-500' : ''}`}
                       data-testid={`calendar-day-${date.toISOString().split('T')[0]}`}
                     >
-                      <div className={`text-sm font-medium mb-1 ${
+                      <div className={`text-sm font-medium mb-1 flex items-center justify-between ${
                         isCurrentMonth ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'
                       } ${isToday ? 'text-blue-600 dark:text-blue-400' : ''}`}>
-                        {date.getDate()}
+                        <span>{date.getDate()}</span>
+                        {hasConflicts && (
+                          <span className="text-red-500" title="Schedule conflicts detected">
+                            ⚠️
+                          </span>
+                        )}
                       </div>
                       
                       <div className="space-y-1">
-                        {dayEvents.slice(0, 2).map(event => (
-                          <div
+                        {dayEvents.slice(0, 2).map(event => {
+                          const baseStyle = event.type === 'local' 
+                            ? getStatusColor(event.status) 
+                            : 'bg-blue-100 text-blue-800 border-blue-200';
+                          const conflictStyle = getConflictStyling(event.id, conflicts, baseStyle);
+                          
+                          return (
+                            <div
                             key={event.id}
-                            className={`text-xs p-1 rounded border ${event.type === 'local' ? getStatusColor(event.status) : 'bg-blue-100 text-blue-800 border-blue-200'}`}
+                            className={`text-xs p-1 rounded border ${conflictStyle} relative`}
                             title={event.type === 'local' 
                               ? `${getPropertyName(event.roomCategoryId)} - ${getRoomCategoryName(event.roomCategoryId)} - ${event.customerName}` 
                               : `${event.summary} - ${event.source}`
@@ -882,7 +942,8 @@ function CalendarContent() {
                               </span>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                         {dayEvents.length > 2 && (
                           <div className="text-xs text-blue-600 font-medium">
                             +{dayEvents.length - 2} more
