@@ -150,7 +150,8 @@ function AddPropertyContent() {
         throw new Error(error.error || "Failed to create property");
       }
 
-      const property = await propertyResponse.json();
+      const propertyResult = await propertyResponse.json();
+      const property = propertyResult.property; // Extract the property from the response
 
       // Create room categories
       const roomCategoriesPromises = (wizardData.roomCategories || []).map(async (room, index) => {

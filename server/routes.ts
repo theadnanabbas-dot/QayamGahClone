@@ -761,9 +761,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Property creation endpoint
-  app.post("/api/properties", async (req, res) => {
+  app.post("/api/properties", requirePropertyOwnerAuth, async (req, res) => {
     try {
       const propertyData = insertPropertySchema.parse(req.body);
+
+      // Get authenticated user ID from middleware
+      const authenticatedUserId = req.userId;
+      if (!authenticatedUserId) {
+        return res.status(401).json({ error: "User authentication failed" });
+      }
 
       // Generate slug from title
       const slug = propertyData.title
@@ -773,8 +779,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace(/-+/g, "-")
         .trim();
 
-      const propertyWithSlug = { ...propertyData, slug };
-      const property = await storage.createProperty(propertyWithSlug);
+      // Set the owner ID from authenticated user
+      const propertyWithSlugAndOwner = { 
+        ...propertyData, 
+        slug, 
+        ownerId: authenticatedUserId 
+      };
+      const property = await storage.createProperty(propertyWithSlugAndOwner);
 
       res.status(201).json({
         message: "Property created successfully",
