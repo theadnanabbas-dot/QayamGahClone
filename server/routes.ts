@@ -1451,6 +1451,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ICS Calendar Sync Route
+  app.get("/calendar-sync/vendor/:vendorId/ical.ics", async (req, res) => {
+    try {
+      const { vendorId } = req.params;
+
+      // Get all properties for this vendor
+      const allProperties = await storage.getProperties();
+      const vendorProperties = allProperties.filter(property => property.ownerId === vendorId);
+
+      if (vendorProperties.length === 0) {
+        return res.status(404).json({ error: "No properties found for this vendor" });
+      }
+
+      // Get room categories for vendor's properties
+      const roomCategories = await storage.getRoomCategories();
+      const vendorRoomCategories = roomCategories.filter(rc => 
+        vendorProperties.some(property => property.id === rc.propertyId)
+      );
+
+      // Get all bookings for vendor's room categories
+      const allBookings = await storage.getBookings();
+      const vendorBookings = allBookings.filter(booking => 
+        vendorRoomCategories.some(rc => rc.id === booking.roomCategoryId)
+      );
+
+      // Generate ICS content
+      let icsContent = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Qayamgah//Property Booking Calendar//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "X-WR-CALNAME:Property Bookings",
+        "X-WR-CALDESC:Bookings for your properties on Qayamgah"
+      ].join("\r\n") + "\r\n";
+
+      // Add each booking as an event
+      for (const booking of vendorBookings) {
+        const roomCategory = vendorRoomCategories.find(rc => rc.id === booking.roomCategoryId);
+        const property = roomCategory ? vendorProperties.find(p => p.id === roomCategory.propertyId) : null;
+        
+        if (!property || !roomCategory) continue;
+
+        // Use the booking's startAt and endAt timestamps
+        const startDateTime = new Date(booking.startAt);
+        const endDateTime = new Date(booking.endAt);
+
+        // Format dates for ICS (YYYYMMDDTHHMMSSZ format)
+        const formatICSDate = (date: Date) => {
+          return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+        };
+
+        // Generate unique ID for the event
+        const eventUID = `booking-${booking.id}@qayamgah.com`;
+        
+        // Determine status color based on booking status
+        let statusDescription = booking.status;
+        if (booking.status.toLowerCase() === 'confirmed') {
+          statusDescription = "✅ CONFIRMED";
+        } else if (booking.status.toLowerCase() === 'pending') {
+          statusDescription = "⏳ PENDING";
+        } else if (booking.status.toLowerCase() === 'cancelled') {
+          statusDescription = "❌ CANCELLED";
+        }
+
+        const eventContent = [
+          "BEGIN:VEVENT",
+          `UID:${eventUID}`,
+          `DTSTART:${formatICSDate(startDateTime)}`,
+          `DTEND:${formatICSDate(endDateTime)}`,
+          `SUMMARY:${statusDescription} - ${property.title}`,
+          `DESCRIPTION:Room: ${roomCategory.name}\\nGuest: ${booking.customerName}\\nEmail: ${booking.customerEmail}\\nDuration: ${booking.stayType}\\nPrice: PKR ${booking.totalPrice}\\nBooking ID: ${booking.id}`,
+          `LOCATION:${property.address || 'See property details'}`,
+          `STATUS:${booking.status.toUpperCase()}`,
+          `CATEGORIES:BOOKING,PROPERTY`,
+          `CREATED:${formatICSDate(new Date())}`,
+          `LAST-MODIFIED:${formatICSDate(new Date())}`,
+          "END:VEVENT"
+        ].join("\r\n") + "\r\n";
+
+        icsContent += eventContent;
+      }
+
+      // Close the calendar
+      icsContent += "END:VCALENDAR\r\n";
+
+      // Set proper headers for ICS file
+      res.set({
+        'Content-Type': 'text/calendar; charset=utf-8',
+        'Content-Disposition': `attachment; filename="qayamgah-bookings-${vendorId}.ics"`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+
+      res.send(icsContent);
+    } catch (error: any) {
+      console.error("Error generating ICS file:", error);
+      res.status(500).json({ error: "Failed to generate calendar file" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
