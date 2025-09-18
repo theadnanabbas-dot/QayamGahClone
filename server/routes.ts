@@ -8,6 +8,7 @@ import {
   insertCitySchema,
   insertPropertyCategorySchema,
   insertPropertySchema,
+  insertRoomCategorySchema,
   insertBlogSchema,
   insertTestimonialSchema,
   insertBookingSchema,
@@ -1020,6 +1021,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         end,
       );
       res.json(bookings);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Room Categories routes
+  app.get("/api/room-categories", async (req, res) => {
+    try {
+      const propertyId = req.query.propertyId as string;
+      const roomCategories = await storage.getRoomCategories(propertyId);
+      res.json(roomCategories);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/room-categories/:id", async (req, res) => {
+    try {
+      const roomCategory = await storage.getRoomCategory(req.params.id);
+      if (!roomCategory) {
+        return res.status(404).json({ error: "Room category not found" });
+      }
+      res.json(roomCategory);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/room-categories", async (req, res) => {
+    try {
+      const roomCategoryData = insertRoomCategorySchema.parse(req.body);
+      const roomCategory = await storage.createRoomCategory(roomCategoryData);
+      res.status(201).json(roomCategory);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/room-categories/:id", async (req, res) => {
+    try {
+      const updates = insertRoomCategorySchema.partial().parse(req.body);
+      const roomCategory = await storage.updateRoomCategory(req.params.id, updates);
+      if (!roomCategory) {
+        return res.status(404).json({ error: "Room category not found" });
+      }
+      res.json(roomCategory);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/room-categories/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteRoomCategory(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Room category not found" });
+      }
+      res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
     }

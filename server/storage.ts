@@ -303,6 +303,10 @@ export class MemStorage implements IStorage {
   }
 
   async deleteProperty(id: string): Promise<boolean> {
+    // First delete all associated room categories
+    await this.deleteRoomCategoriesByPropertyId(id);
+    
+    // Then delete the property
     return this.properties.delete(id);
   }
 

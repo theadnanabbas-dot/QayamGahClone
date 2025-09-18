@@ -1,57 +1,11 @@
-import { useState, useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { insertPropertySchema } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
-import { 
-  Building2, 
-  MapPin, 
-  Upload, 
-  X, 
-  ArrowLeft,
-  Loader2,
-  Camera,
-  Home,
-  Users,
-  Bath,
-  Bed,
-  DollarSign
-} from "lucide-react";
-import { z } from "zod";
+import { Plus, Building2 } from "lucide-react";
 import PropertyOwnerLayout from "./layout";
-
-// Form schema - simplified version
-const propertyFormSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  pricePerHour: z.string().min(1, "Price per hour is required"),
-  pricePerDay: z.string().optional(),
-  minHours: z.number().min(1),
-  maxGuests: z.number().min(1),
-  address: z.string().min(1, "Address is required"),
-  latitude: z.string().optional(),
-  longitude: z.string().optional(),
-  cityId: z.string().min(1, "City is required"),
-  categoryId: z.string().min(1, "Category is required"),
-  ownerId: z.string().min(1, "Owner ID is required"),
-  bedrooms: z.number().min(0),
-  bathrooms: z.number().min(0),
-  amenities: z.array(z.string()).default([]),
-  images: z.array(z.string()).default([]),
-  mainImage: z.string().min(1, "Main image is required"),
-});
-
-type PropertyFormData = z.infer<typeof propertyFormSchema>;
+import PropertyWizardModal from "@/components/PropertyWizardModal";
 
 // Types
 interface City {
@@ -66,7 +20,30 @@ interface PropertyCategory {
   slug: string;
 }
 
-// Sample images for demo
+interface WizardFormData {
+  propertyType?: "commercial" | "private";
+  similarTo?: string;
+  propertyName?: string;
+  propertyPhone?: string;
+  propertyAddress?: string;
+  roomCategoriesCount?: number;
+  propertySummary?: string;
+  amenities?: string[];
+  roomCategories?: Array<{
+    name?: string;
+    image?: string;
+    maxGuestCapacity?: number;
+    bathrooms?: number;
+    beds?: number;
+    areaSqFt?: number;
+    pricePer4Hours?: number;
+    pricePer6Hours?: number;
+    pricePer12Hours?: number;
+    pricePer24Hours?: number;
+  }>;
+}
+
+// Sample images for demo (used when creating properties)
 const sampleImages = [
   "https://picsum.photos/800/600?random=1",
   "https://picsum.photos/800/600?random=2",
@@ -75,23 +52,14 @@ const sampleImages = [
   "https://picsum.photos/800/600?random=5"
 ];
 
-// Amenities list
-const availableAmenities = [
-  "WiFi", "Air Conditioning", "Heating", "Parking", "Kitchen", "Washing Machine",
-  "TV", "Balcony", "Garden", "Pool", "Gym", "Security", "Elevator", "Pet Friendly"
-];
-
 function AddPropertyContent() {
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   // Get current user from localStorage
   const userString = localStorage.getItem("property_owner_user");
   const user = userString ? JSON.parse(userString) : null;
-
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
-  const [mainImageIndex, setMainImageIndex] = useState(0);
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-  
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   // Fetch cities and categories
   const { data: cities = [] } = useQuery<City[]>({
@@ -102,60 +70,94 @@ function AddPropertyContent() {
     queryKey: ["/api/property-categories"]
   });
 
-  // Form setup
-  const form = useForm<PropertyFormData>({
-    resolver: zodResolver(propertyFormSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      pricePerHour: "",
-      pricePerDay: "",
-      minHours: 1,
-      maxGuests: 1,
-      address: "",
-      bedrooms: 0,
-      bathrooms: 0,
-      amenities: [],
-      images: [],
-      mainImage: "",
-      cityId: "",
-      categoryId: "",
-      ownerId: user?.id || "",
-    }
-  });
-
-  // Update ownerId when user is available
-  useEffect(() => {
-    if (user?.id) {
-      form.setValue("ownerId", user.id);
-    }
-  }, [user, form]);
-
   // Create property mutation
   const createPropertyMutation = useMutation({
-    mutationFn: async (data: PropertyFormData) => {
-      const response = await fetch(`/api/properties`, {
+    mutationFn: async (wizardData: WizardFormData) => {
+      // Transform wizard data to property API format
+      const propertyData = {
+        title: wizardData.propertyName || "",
+        description: wizardData.propertySummary || "",
+        propertyType: wizardData.propertyType || "private",
+        phoneNumber: wizardData.propertyPhone || "",
+        roomCategoriesCount: wizardData.roomCategoriesCount || 1,
+        slug: (wizardData.propertyName || "").toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || "property",
+        // Use default pricing for now (will be replaced by room categories)
+        pricePerHour: "500",
+        pricePerDay: "5000", 
+        minHours: 4,
+        maxGuests: wizardData.roomCategories?.[0]?.maxGuestCapacity || 2,
+        address: wizardData.propertyAddress || "",
+        cityId: cities[0]?.id || "", // Default to first city for now
+        categoryId: categories.find(c => c.slug === wizardData.similarTo)?.id || categories[0]?.id || "",
+        ownerId: user?.id || "",
+        bedrooms: wizardData.roomCategories?.[0]?.beds || 1,
+        bathrooms: wizardData.roomCategories?.[0]?.bathrooms || 1,
+        amenities: wizardData.amenities || [],
+        images: sampleImages.slice(0, 3), // Use first 3 sample images
+        mainImage: sampleImages[0],
+        isFeature: false,
+        isActive: true,
+        rating: "0.00"
+      };
+
+      // Create the property first
+      const propertyResponse = await fetch(`/api/properties`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(propertyData)
       });
-      if (!response.ok) {
-        const error = await response.json();
+
+      if (!propertyResponse.ok) {
+        const error = await propertyResponse.json();
         throw new Error(error.error || "Failed to create property");
       }
-      return response.json();
+
+      const property = await propertyResponse.json();
+
+      // Create room categories
+      const roomCategoriesPromises = (wizardData.roomCategories || []).map(async (room, index) => {
+        const roomData = {
+          propertyId: property.id,
+          name: room.name || `Room Category ${index + 1}`,
+          image: sampleImages[index % sampleImages.length],
+          maxGuestCapacity: room.maxGuestCapacity || 2,
+          bathrooms: room.bathrooms || 1,
+          beds: room.beds || 1,
+          areaSqFt: room.areaSqFt || null,
+          pricePer4Hours: room.pricePer4Hours?.toString() || "0",
+          pricePer6Hours: room.pricePer6Hours?.toString() || "0",
+          pricePer12Hours: room.pricePer12Hours?.toString() || "0",
+          pricePer24Hours: room.pricePer24Hours?.toString() || "0"
+        };
+
+        const roomResponse = await fetch(`/api/room-categories`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(roomData)
+        });
+
+        if (!roomResponse.ok) {
+          const error = await roomResponse.json();
+          throw new Error(error.error || "Failed to create room category");
+        }
+
+        return roomResponse.json();
+      });
+
+      await Promise.all(roomCategoriesPromises);
+      return property;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({
         title: "Success!",
-        description: "Property created successfully.",
+        description: "Property created successfully with room categories.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
-      form.reset();
-      setSelectedImages([]);
-      setSelectedAmenities([]);
+      setIsWizardOpen(false);
     },
     onError: (error: any) => {
       toast({
@@ -166,415 +168,54 @@ function AddPropertyContent() {
     },
   });
 
-  const handleImageSelection = (imageUrl: string) => {
-    if (selectedImages.includes(imageUrl)) {
-      const newImages = selectedImages.filter(img => img !== imageUrl);
-      setSelectedImages(newImages);
-      form.setValue("images", newImages);
-      if (mainImageIndex >= newImages.length && newImages.length > 0) {
-        setMainImageIndex(0);
-        form.setValue("mainImage", newImages[0]);
-      } else if (newImages.length === 0) {
-        form.setValue("mainImage", "");
-      }
-    } else {
-      const newImages = [...selectedImages, imageUrl];
-      setSelectedImages(newImages);
-      form.setValue("images", newImages);
-      if (selectedImages.length === 0) {
-        form.setValue("mainImage", imageUrl);
-      }
-    }
-  };
-
-  const setMainImage = (index: number) => {
-    setMainImageIndex(index);
-    form.setValue("mainImage", selectedImages[index]);
-  };
-
-  const handleAmenityToggle = (amenity: string) => {
-    const newAmenities = selectedAmenities.includes(amenity)
-      ? selectedAmenities.filter(a => a !== amenity)
-      : [...selectedAmenities, amenity];
-    
-    setSelectedAmenities(newAmenities);
-    form.setValue("amenities", newAmenities);
-  };
-
-  const onSubmit = (data: PropertyFormData) => {
-    // Ensure we have images and main image
-    if (selectedImages.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please select at least one image",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const submissionData = {
-      ...data,
-      images: selectedImages,
-      mainImage: selectedImages[mainImageIndex],
-      amenities: selectedAmenities,
-    };
-
-    createPropertyMutation.mutate(submissionData);
+  const handleWizardSubmit = (data: WizardFormData) => {
+    createPropertyMutation.mutate(data);
   };
 
   return (
-    <div className="space-y-6" data-testid="add-property-page">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-          Add New Property
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          List a new rental property to start earning.
-        </p>
+    <div className="flex items-center justify-center min-h-[80vh]" data-testid="add-property-page">
+      <div className="w-full max-w-2xl mx-auto px-4">
+        <Card className="text-center shadow-lg border-2 border-dashed border-gray-300 hover:border-blue-500 transition-colors">
+          <CardHeader className="pb-6">
+            <div className="mx-auto w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-4">
+              <Building2 className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              Ready to Add Your Property?
+            </CardTitle>
+            <p className="text-gray-600 dark:text-gray-400 text-lg mt-2">
+              List your rental space and start earning. Our step-by-step wizard makes it easy to get started.
+            </p>
+          </CardHeader>
+          <CardContent className="pb-8">
+            <Button
+              size="lg"
+              className="text-lg px-8 py-6 h-auto"
+              onClick={() => setIsWizardOpen(true)}
+              disabled={createPropertyMutation.isPending}
+              data-testid="button-add-property"
+            >
+              <Plus className="h-6 w-6 mr-2" />
+              Add Property
+            </Button>
+            
+            <div className="mt-6 text-sm text-gray-500 dark:text-gray-400">
+              <p>✓ Quick 4-step setup process</p>
+              <p>✓ Multiple room categories support</p>
+              <p>✓ Flexible pricing options</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Building2 className="h-5 w-5 mr-2" />
-                Basic Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Property Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Modern 2BR Apartment in Downtown" {...field} data-testid="input-property-title" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Describe your property..."
-                        className="min-h-[100px]"
-                        {...field}
-                        data-testid="input-property-description"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="cityId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>City</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-city">
-                            <SelectValue placeholder="Select city" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {cities.map((city) => (
-                            <SelectItem key={city.id} value={city.id}>
-                              {city.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="categoryId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-category">
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Street address" {...field} data-testid="input-address" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Pricing & Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <DollarSign className="h-5 w-5 mr-2" />
-                Pricing & Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="pricePerHour"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price Per Hour (Rs.)</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="500" {...field} data-testid="input-price-hour" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="pricePerDay"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price Per Day (Rs.) - Optional</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="5000" {...field} data-testid="input-price-day" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <FormField
-                  control={form.control}
-                  name="minHours"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Min Hours</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          min="1" 
-                          {...field}
-                          onChange={e => field.onChange(parseInt(e.target.value))}
-                          data-testid="input-min-hours"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="maxGuests"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Max Guests</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          min="1" 
-                          {...field}
-                          onChange={e => field.onChange(parseInt(e.target.value))}
-                          data-testid="input-max-guests"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="bedrooms"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bedrooms</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          min="0" 
-                          {...field}
-                          onChange={e => field.onChange(parseInt(e.target.value))}
-                          data-testid="input-bedrooms"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="bathrooms"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bathrooms</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          min="0" 
-                          {...field}
-                          onChange={e => field.onChange(parseInt(e.target.value))}
-                          data-testid="input-bathrooms"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Images */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Camera className="h-5 w-5 mr-2" />
-                Property Images
-              </CardTitle>
-              <CardDescription>
-                Select images for your property. The first selected image will be the main image.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {sampleImages.map((imageUrl, index) => (
-                  <div key={index} className="relative">
-                    <div
-                      className={`border-2 rounded-lg overflow-hidden cursor-pointer transition-all ${
-                        selectedImages.includes(imageUrl)
-                          ? "border-green-500 ring-2 ring-green-200"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                      onClick={() => handleImageSelection(imageUrl)}
-                    >
-                      <img
-                        src={imageUrl}
-                        alt={`Property ${index + 1}`}
-                        className="w-full h-24 object-cover"
-                      />
-                      {selectedImages.includes(imageUrl) && (
-                        <div className="absolute inset-0 bg-green-500 bg-opacity-20 flex items-center justify-center">
-                          <span className="bg-green-500 text-white rounded-full p-1">
-                            ✓
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    {selectedImages.includes(imageUrl) && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className={`mt-2 w-full ${
-                          selectedImages.indexOf(imageUrl) === mainImageIndex
-                            ? "bg-green-50 border-green-500 text-green-600"
-                            : ""
-                        }`}
-                        onClick={() => setMainImage(selectedImages.indexOf(imageUrl))}
-                      >
-                        {selectedImages.indexOf(imageUrl) === mainImageIndex ? "Main" : "Set Main"}
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Amenities */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Amenities</CardTitle>
-              <CardDescription>
-                Select the amenities available in your property.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {availableAmenities.map((amenity) => (
-                  <div key={amenity} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={amenity}
-                      checked={selectedAmenities.includes(amenity)}
-                      onCheckedChange={() => handleAmenityToggle(amenity)}
-                    />
-                    <Label htmlFor={amenity} className="text-sm">
-                      {amenity}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Submit */}
-          <div className="flex justify-end space-x-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => form.reset()}
-              data-testid="button-discard"
-            >
-              Discard
-            </Button>
-            <Button
-              type="submit"
-              disabled={createPropertyMutation.isPending}
-              data-testid="button-submit"
-            >
-              {createPropertyMutation.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Create Property
-            </Button>
-          </div>
-        </form>
-      </Form>
+      {/* Property Wizard Modal */}
+      <PropertyWizardModal
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        onSubmit={handleWizardSubmit}
+        cities={cities}
+        categories={categories}
+      />
     </div>
   );
 }
