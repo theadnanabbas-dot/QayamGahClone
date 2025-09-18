@@ -292,10 +292,13 @@ export default function PropertyDetails() {
                           <div className="lg:col-span-2">
                             <div className="flex items-start space-x-4">
                               <img
-                                src={category.image || "/api/images/placeholder-room.jpg"}
+                                src={`/api/images/room-categories/${category.name.toLowerCase().replace(/\s+/g, '-')}.jpg`}
                                 alt={category.name}
                                 className="w-24 h-24 object-cover rounded-lg"
                                 data-testid={`img-room-category-${category.id}`}
+                                onError={(e) => {
+                                  e.currentTarget.src = '/api/images/placeholder-room.jpg';
+                                }}
                               />
                               <div>
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2" data-testid={`text-room-name-${category.id}`}>
@@ -363,12 +366,25 @@ export default function PropertyDetails() {
                             <Button 
                               className="w-full"
                               onClick={() => {
-                                // Scroll to booking section
-                                const bookingSection = document.querySelector('[data-testid="section-booking"]');
-                                if (bookingSection) {
-                                  bookingSection.scrollIntoView({ behavior: 'smooth' });
-                                }
-                                // Could also pre-select this room category in the booking component
+                                // Navigate to checkout page with pre-selected room category
+                                const bookingData = {
+                                  propertyId: property?.id || '',
+                                  propertyTitle: property?.title || '',
+                                  roomCategoryId: category.id,
+                                  roomCategoryName: category.name,
+                                  stayType: '4h', // Default to 4h
+                                  selectedDate: '', // Will be required to fill on checkout
+                                  startTime: '09:00', // Default start time
+                                  guests: '1', // Default guests
+                                  totalPrice: parseFloat(category.pricePer4Hours) // Default 4h price
+                                };
+                                const params = new URLSearchParams(
+                                  Object.entries(bookingData)
+                                    .filter(([, value]) => value !== '' && value !== null && value !== undefined)
+                                    .map(([key, value]) => [key, String(value)])
+                                );
+                                const checkoutUrl = `/checkout?${params.toString()}`;
+                                window.location.href = checkoutUrl;
                               }}
                               data-testid={`button-book-now-${category.id}`}
                             >
@@ -465,7 +481,7 @@ export default function PropertyDetails() {
                           <span className="text-sm font-medium">{relatedProperty.rating}</span>
                         </div>
                         <div className="text-sm font-bold text-primary">
-                          Rs. {relatedProperty.pricePerHour}/hr
+                          View Details
                         </div>
                       </div>
                     </CardContent>

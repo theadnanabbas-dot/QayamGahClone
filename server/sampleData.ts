@@ -164,7 +164,7 @@ export async function loadSampleData() {
   properties.push(sunriseResidency);
 
   // Create room categories for Sunrise Residency
-  await storage.createRoomCategory({
+  const sunriseStandardRoom = await storage.createRoomCategory({
     propertyId: sunriseResidency.id,
     name: "Standard Room",
     image: "/api/images/properties/sunrise-standard.jpg",
@@ -178,7 +178,7 @@ export async function loadSampleData() {
     pricePer24Hours: "4000.00"
   });
 
-  await storage.createRoomCategory({
+  const sunriseDeluxeRoom = await storage.createRoomCategory({
     propertyId: sunriseResidency.id,
     name: "Deluxe Room",
     image: "/api/images/properties/sunrise-deluxe.jpg",
@@ -192,7 +192,7 @@ export async function loadSampleData() {
     pricePer24Hours: "5200.00"
   });
 
-  await storage.createRoomCategory({
+  const sunriseSuite = await storage.createRoomCategory({
     propertyId: sunriseResidency.id,
     name: "Suite",
     image: "/api/images/properties/sunrise-suite.jpg",

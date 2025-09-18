@@ -491,8 +491,11 @@ export default function CalendarBooking({ property, roomCategories, onBookingSuc
               guests: guests,
               totalPrice: calculatedPrice?.totalPrice || 0
             };
-            const params = new URLSearchParams(Object.entries(bookingData).filter(([, value]) => value !== '' && value !== 0));
-            setLocation(`/checkout?${params.toString()}`);
+            console.log('Booking data for checkout:', bookingData);
+            const params = new URLSearchParams(Object.entries(bookingData).filter(([, value]) => value !== '' && value !== null && value !== undefined));
+            const checkoutUrl = `/checkout?${params.toString()}`;
+            console.log('Navigating to:', checkoutUrl);
+            setLocation(checkoutUrl);
           }}
           disabled={
             !selectedDate || 

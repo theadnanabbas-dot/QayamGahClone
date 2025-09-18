@@ -28,6 +28,7 @@ import PropertyOwnerProperties from "@/pages/property-owner/properties";
 import PropertyOwnerBookings from "@/pages/property-owner/bookings";
 import PropertyOwnerTransactions from "@/pages/property-owner/transactions";
 import PropertyOwnerProfile from "@/pages/property-owner/profile";
+import Checkout from "@/pages/checkout";
 
 function Router() {
   return (
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/" component={Homepage} />
       <Route path="/property" component={PropertyListing} />
       <Route path="/property-details/:slug" component={PropertyDetails} />
+      <Route path="/checkout" component={Checkout} />
       <Route path="/hotels" component={HotelsListing} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
