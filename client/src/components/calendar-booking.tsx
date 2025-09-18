@@ -1,17 +1,13 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { CalendarIcon, Clock, Users, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { CalendarIcon, CheckCircle } from "lucide-react";
 import { format, addHours, addDays, startOfDay, isAfter, isBefore } from "date-fns";
+import { useLocation } from "wouter";
 
 // Types
 interface Property {
@@ -59,16 +55,9 @@ export default function CalendarBooking({ property, roomCategories, onBookingSuc
   const [stayType, setStayType] = useState<string>("4h");
   const [selectedRoomCategory, setSelectedRoomCategory] = useState<string>(roomCategories[0]?.id || "");
   const [guests, setGuests] = useState("1");
-  const [customerInfo, setCustomerInfo] = useState({
-    name: "",
-    email: "",
-    phone: ""
-  });
-  const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [calculatedPrice, setCalculatedPrice] = useState<PriceCalculation | null>(null);
   
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   // Get existing bookings for this property
   const { data: existingBookings } = useQuery<Booking[]>({
@@ -95,34 +84,6 @@ export default function CalendarBooking({ property, roomCategories, onBookingSuc
     }
   });
 
-  // Booking creation mutation
-  const createBookingMutation = useMutation({
-    mutationFn: async (bookingData: any) => {
-      const response = await fetch("/api/bookings", {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bookingData)
-      });
-      if (!response.ok) throw new Error('Failed to create booking');
-      return response.json();
-    },
-    onSuccess: (booking) => {
-      toast({
-        title: "Booking Created Successfully!",
-        description: `Your booking for ${property.title} has been confirmed.`,
-      });
-      setShowBookingDialog(false);
-      queryClient.invalidateQueries({ queryKey: [`/api/properties/${property.id}/bookings`] });
-      onBookingSuccess?.(booking);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Booking Failed",
-        description: error.message || "Failed to create booking. Please try again.",
-        variant: "destructive",
-      });
-    }
-  });
 
   // Auto-set start time for 24h bookings
   useEffect(() => {
@@ -470,32 +431,6 @@ export default function CalendarBooking({ property, roomCategories, onBookingSuc
           </div>
         </div>
 
-        {/* Customer Information */}
-        <div className="space-y-4" data-testid="customer-info">
-          <label className="text-sm font-medium">Contact Information</label>
-          <div className="grid grid-cols-1 gap-3">
-            <Input
-              placeholder="Full Name *"
-              value={customerInfo.name}
-              onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
-              data-testid="input-name"
-            />
-            <Input
-              type="email"
-              placeholder="Email Address *"
-              value={customerInfo.email}
-              onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
-              data-testid="input-email"
-            />
-            <Input
-              type="tel"
-              placeholder="Phone Number"
-              value={customerInfo.phone}
-              onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-              data-testid="input-phone"
-            />
-          </div>
-        </div>
 
         {/* Booking Information */}
         {selectedDate && startTime && calculatedPrice && (
@@ -543,57 +478,33 @@ export default function CalendarBooking({ property, roomCategories, onBookingSuc
         <Button
           className="w-full"
           size="lg"
-          onClick={() => setShowBookingDialog(true)}
+          onClick={() => {
+            // Navigate to checkout with booking data in URL params
+            const bookingData = {
+              propertyId: property.id,
+              propertyTitle: property.title,
+              roomCategoryId: selectedRoomCategory,
+              roomCategoryName: roomCategories.find(rc => rc.id === selectedRoomCategory)?.name || '',
+              stayType: stayType,
+              selectedDate: selectedDate?.toISOString(),
+              startTime: startTime,
+              guests: guests,
+              totalPrice: calculatedPrice?.totalPrice || 0
+            };
+            const params = new URLSearchParams(Object.entries(bookingData).filter(([, value]) => value !== '' && value !== 0));
+            setLocation(`/checkout?${params.toString()}`);
+          }}
           disabled={
             !selectedDate || 
             (stayType !== '24h' && !startTime) ||
-            (stayType !== '24h' && availableTimeSlots.length === 0) ||
-            createBookingMutation.isPending
+            (stayType !== '24h' && availableTimeSlots.length === 0)
           }
           data-testid="button-book-now"
         >
-          {createBookingMutation.isPending ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating Booking...
-            </>
-          ) : (
-            <>
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Book Now
-            </>
-          )}
+          <CheckCircle className="mr-2 h-4 w-4" />
+          Book Now
         </Button>
 
-        {/* Booking Confirmation Dialog */}
-        <AlertDialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
-          <AlertDialogContent data-testid="booking-confirmation-dialog">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirm Booking</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to book {property.title} for {stayType === '4h' ? '4 hours' : stayType === '6h' ? '6 hours' : stayType === '12h' ? '12 hours' : '24 hours'} 
-                on {selectedDate && format(selectedDate, "PPP")} at {startTime}?
-                <br /><br />
-                Total cost: Rs. {calculatedPrice?.totalPrice}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <Button variant="outline" onClick={() => setShowBookingDialog(false)} data-testid="button-cancel">
-                Cancel
-              </Button>
-              <Button onClick={handleBooking} disabled={createBookingMutation.isPending} data-testid="button-confirm">
-                {createBookingMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Confirming...
-                  </>
-                ) : (
-                  "Confirm Booking"
-                )}
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </CardContent>
     </Card>
   );
