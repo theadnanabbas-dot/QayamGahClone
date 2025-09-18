@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { ICSParser } from "./ics-parser";
 import {
   insertUserSchema,
   updateUserSchema,
@@ -1721,17 +1722,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Access denied" });
       }
 
-      // For now, just update the sync status - ICS parsing will be implemented in next task
-      const updatedCalendar = await storage.updateImportedCalendar(calendarId, {
-        lastSyncAt: new Date(),
-        lastSyncStatus: "success",
-        syncErrorMessage: null
-      });
+      let updatedCalendar;
+      let syncedEventsCount = 0;
 
-      res.json({
-        message: "Calendar sync initiated successfully",
-        calendar: updatedCalendar
-      });
+      try {
+        // Clear existing events for this calendar
+        await storage.deleteImportedEventsByCalendarId(calendarId);
+
+        // Fetch and parse the ICS feed
+        const importedEvents = await ICSParser.syncCalendar(calendar.sourceUrl, calendarId);
+        
+        // Save all the parsed events
+        for (const eventData of importedEvents) {
+          await storage.createImportedEvent(eventData);
+          syncedEventsCount++;
+        }
+
+        // Update calendar with successful sync
+        updatedCalendar = await storage.updateImportedCalendar(calendarId, {
+          lastSyncAt: new Date(),
+          lastSyncStatus: "success",
+          syncErrorMessage: null
+        });
+
+        res.json({
+          message: `Calendar synced successfully. ${syncedEventsCount} events imported.`,
+          calendar: updatedCalendar,
+          eventsCount: syncedEventsCount
+        });
+
+      } catch (syncError: any) {
+        console.error("ICS sync error:", syncError);
+        
+        // Update calendar with error status
+        updatedCalendar = await storage.updateImportedCalendar(calendarId, {
+          lastSyncAt: new Date(),
+          lastSyncStatus: "error",
+          syncErrorMessage: syncError.message
+        });
+
+        res.status(400).json({
+          error: "Calendar sync failed",
+          details: syncError.message,
+          calendar: updatedCalendar
+        });
+      }
     } catch (error: any) {
       console.error("Error syncing calendar:", error);
       res.status(500).json({ error: "Internal server error" });
