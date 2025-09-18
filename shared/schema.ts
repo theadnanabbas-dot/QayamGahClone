@@ -39,9 +39,6 @@ export const properties = pgTable("properties", {
   slug: text("slug").notNull().unique(),
   description: text("description"),
   propertyType: text("property_type").notNull().default("private"), // "commercial" or "private"
-  pricePerHour: decimal("price_per_hour", { precision: 10, scale: 2 }).notNull(),
-  pricePerDay: decimal("price_per_day", { precision: 10, scale: 2 }),
-  minHours: integer("min_hours").notNull().default(1),
   maxGuests: integer("max_guests").notNull().default(1),
   address: text("address").notNull(),
   phoneNumber: text("phone_number"), // Property phone number
@@ -80,12 +77,13 @@ export const roomCategories = pgTable("room_categories", {
 
 export const bookings = pgTable("bookings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  propertyId: varchar("property_id").notNull().references(() => properties.id),
+  roomCategoryId: varchar("room_category_id").notNull().references(() => roomCategories.id),
   userId: varchar("user_id").notNull().references(() => users.id),
+  stayType: text("stay_type").notNull(), // "4h", "6h", "12h", "24h"
   startAt: timestamp("start_at").notNull(),
   endAt: timestamp("end_at").notNull(),
   totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
-  currency: text("currency").notNull().default("USD"),
+  currency: text("currency").notNull().default("PKR"),
   paymentMethod: text("payment_method").notNull().default("cash"), // "cash", "card", "bank_transfer", "jazzcash", "easypaisa"
   status: text("status").notNull().default("PENDING"), // "PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
@@ -193,6 +191,7 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({
   createdAt: true,
   totalPrice: true, // Server will calculate this, don't accept from client
 }).extend({
+  stayType: z.enum(["4h", "6h", "12h", "24h"]),
   status: z.enum(["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"]).default("PENDING"),
   paymentMethod: z.enum(["cash", "card", "bank_transfer", "jazzcash", "easypaisa"]).default("cash"),
   startAt: z.coerce.date(),
