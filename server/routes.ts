@@ -525,6 +525,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Property owner vendor profile update endpoint
+  app.patch("/api/property-owner/vendor", requirePropertyOwnerAuth, async (req, res) => {
+    try {
+      // For demo purposes, always update the demo owner's vendor profile
+      // In a real app, you would decode the JWT token to get the actual user ID
+      const demoUserId = 'owner-001';
+
+      // Parse and validate the request body
+      const vendorData = updateVendorSchema.parse(req.body);
+
+      // Get the existing vendor to get the vendor ID
+      const existingVendor = await storage.getVendorByUserId(demoUserId);
+      if (!existingVendor) {
+        return res.status(404).json({ error: "Vendor profile not found" });
+      }
+
+      // Update the vendor profile
+      const vendor = await storage.updateVendor(existingVendor.id, vendorData);
+      if (!vendor) {
+        return res.status(404).json({ error: "Vendor not found" });
+      }
+
+      res.json({
+        message: "Profile updated successfully",
+        vendor,
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   app.patch("/api/vendors/:id", requireAdminAuth, async (req, res) => {
     try {
       const vendorData = updateVendorSchema.parse(req.body);

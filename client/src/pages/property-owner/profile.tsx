@@ -46,19 +46,24 @@ function ProfileContent() {
 
   const { toast } = useToast();
 
-  // Get current user from localStorage
-  const userString = localStorage.getItem("property_owner_user");
-  const user = userString ? JSON.parse(userString) : null;
+  // Get current user from localStorage (memoize to prevent re-renders)
+  const [user] = useState(() => {
+    const userString = localStorage.getItem("property_owner_user");
+    return userString ? JSON.parse(userString) : null;
+  });
   const userId = user?.id;
 
   const { data: vendor } = useQuery<Vendor>({
     queryKey: ["/api/property-owner/vendor"],
     enabled: !!userId, // Only run query if userId exists
+    refetchOnWindowFocus: false, // Prevent automatic refetch on focus
+    refetchOnMount: false, // Prevent refetch when component mounts again
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
   });
 
-  // Load vendor profile data
+  // Load vendor profile data (only when vendor data changes)
   useEffect(() => {
-    if (vendor) {
+    if (vendor && !vendorData) { // Only set once to prevent infinite loops
       setVendorData(vendor);
       setFormData({
         firstName: vendor.firstName || "",
@@ -72,7 +77,7 @@ function ProfileContent() {
         country: vendor.country || "",
       });
     }
-  }, [vendor, user]);
+  }, [vendor, user?.email, vendorData]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -82,6 +87,60 @@ function ProfileContent() {
   };
 
   const handleSaveChanges = async () => {
+    // Explicit validation flag to prevent any API calls
+    let validationPassed = true;
+    
+    // Validate mandatory fields
+    if (!formData.firstName?.trim()) {
+      validationPassed = false;
+      toast({
+        title: "Validation Error",
+        description: "First name is required",
+        variant: "destructive",
+      });
+    }
+
+    if (!formData.phoneNo1?.trim()) {
+      validationPassed = false;
+      toast({
+        title: "Validation Error", 
+        description: "Primary phone number is required",
+        variant: "destructive",
+      });
+    }
+
+    if (!formData.cnic?.trim()) {
+      validationPassed = false;
+      toast({
+        title: "Validation Error",
+        description: "CNIC/National ID is required", 
+        variant: "destructive",
+      });
+    }
+
+    if (!formData.address?.trim()) {
+      validationPassed = false;
+      toast({
+        title: "Validation Error",
+        description: "Address is required",
+        variant: "destructive",
+      });
+    }
+
+    if (!formData.city?.trim()) {
+      validationPassed = false;
+      toast({
+        title: "Validation Error",
+        description: "City is required",
+        variant: "destructive",
+      });
+    }
+
+    // Early return if validation failed
+    if (!validationPassed) {
+      return;
+    }
+
     if (!vendorData) {
       toast({
         title: "Error",
@@ -93,25 +152,30 @@ function ProfileContent() {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/vendors/${vendorData.id}`, {
+      // Get the property owner token for authentication
+      const token = localStorage.getItem("property_owner_token");
+      
+      const response = await fetch(`/api/property-owner/vendor`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          phoneNo1: formData.phoneNo1,
-          phoneNo2: formData.phoneNo2,
-          cnic: formData.cnic,
-          address: formData.address,
-          city: formData.city,
-          country: formData.country,
+          firstName: formData.firstName?.trim(),
+          lastName: formData.lastName?.trim(),
+          phoneNo1: formData.phoneNo1?.trim(),
+          phoneNo2: formData.phoneNo2?.trim() || null,
+          cnic: formData.cnic?.trim(),
+          address: formData.address?.trim(),
+          city: formData.city?.trim(),
+          country: formData.country?.trim() || "Pakistan",
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update profile");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update profile");
       }
 
       toast({
@@ -124,7 +188,7 @@ function ProfileContent() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update profile",
+        description: error instanceof Error ? error.message : "Failed to update profile",
         variant: "destructive",
       });
     } finally {

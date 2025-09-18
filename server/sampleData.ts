@@ -1097,6 +1097,62 @@ export async function loadSampleData() {
     rating: "4.2"
   });
 
+  // Create dummy bookings for the demo property owner's properties to help with testing
+  // Booking 1: Confirmed booking for Luxury Apartment in DHA
+  bookings.push(await storage.createBooking({
+    propertyId: demoProperty1.id,
+    userId: customers[0].id, // Ahmed Hassan
+    startAt: new Date(Date.now() + 86400000 * 2), // 2 days from now
+    endAt: new Date(Date.now() + 86400000 * 2 + 3600000 * 4), // 4 hours later
+    paymentMethod: "card",
+    status: "CONFIRMED",
+    currency: "PKR"
+  }));
+
+  // Booking 2: Pending booking for Cozy House in Gulberg
+  bookings.push(await storage.createBooking({
+    propertyId: demoProperty2.id,
+    userId: customers[1].id, // Fatima Khan
+    startAt: new Date(Date.now() + 86400000 * 4), // 4 days from now
+    endAt: new Date(Date.now() + 86400000 * 4 + 3600000 * 8), // 8 hours later
+    paymentMethod: "jazzcash",
+    status: "PENDING",
+    currency: "PKR"
+  }));
+
+  // Booking 3: Confirmed booking for Modern Office Space
+  bookings.push(await storage.createBooking({
+    propertyId: demoProperty3.id,
+    userId: customers[2].id, // Ali Shah
+    startAt: new Date(Date.now() + 86400000 * 1), // 1 day from now
+    endAt: new Date(Date.now() + 86400000 * 1 + 3600000 * 9), // 9 hours later (meets 8 hour minimum)
+    paymentMethod: "bank_transfer",
+    status: "CONFIRMED",
+    currency: "PKR"
+  }));
+
+  // Booking 4: Another confirmed booking for Luxury Apartment in DHA
+  bookings.push(await storage.createBooking({
+    propertyId: demoProperty1.id,
+    userId: customers[2].id, // Ali Shah
+    startAt: new Date(Date.now() + 86400000 * 6), // 6 days from now
+    endAt: new Date(Date.now() + 86400000 * 6 + 3600000 * 3), // 3 hours later
+    paymentMethod: "easypaisa",
+    status: "CONFIRMED",
+    currency: "PKR"
+  }));
+
+  // Booking 5: Cancelled booking for Cozy House in Gulberg
+  bookings.push(await storage.createBooking({
+    propertyId: demoProperty2.id,
+    userId: customers[0].id, // Ahmed Hassan
+    startAt: new Date(Date.now() + 86400000 * 8), // 8 days from now
+    endAt: new Date(Date.now() + 86400000 * 8 + 3600000 * 6), // 6 hours later
+    paymentMethod: "cash",
+    status: "CANCELLED",
+    currency: "PKR"
+  }));
+
   // Create demo vendor profile for the demo owner
   const demoVendor = await storage.createVendor({
     userId: demoOwner.id,
