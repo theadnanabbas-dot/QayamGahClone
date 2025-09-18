@@ -30,7 +30,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
+  updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   deleteUser(id: string): Promise<boolean>;
   getAllUsers(): Promise<User[]>;
   getUsersByRole(role: string): Promise<User[]>;
@@ -405,7 +405,7 @@ export class MemStorage implements IStorage {
   }
 
   // Missing User CRUD operations
-  async updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined> {
+  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
     const user = this.users.get(id);
     if (!user) return undefined;
 
@@ -416,7 +416,8 @@ export class MemStorage implements IStorage {
       fullName: updates.fullName !== undefined ? updates.fullName : user.fullName,
       phone: updates.phone !== undefined ? updates.phone : user.phone,
       role: updates.role ?? user.role,
-      passwordHash: updates.password ? `hashed_${updates.password}` : user.passwordHash
+      isActive: updates.isActive ?? user.isActive,
+      passwordHash: user.passwordHash // Password updates should be handled separately if needed
     };
     this.users.set(id, updatedUser);
     return updatedUser;

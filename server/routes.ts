@@ -456,6 +456,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ error: "Property owner access required" });
     }
     
+    // For demo environment, map demo credentials to user ID
+    // In production, decode JWT token to get user ID
+    if (token.startsWith('owner_')) {
+      // Since this is a demo with hardcoded login (owner@qayamgah.com / owner123)
+      // we can safely map to the demo user ID
+      req.userId = "owner-001"; // Demo user ID from property-owner-login
+    }
+    
     next();
   };
 
@@ -939,9 +947,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/properties", async (req, res) => {
+  app.post("/api/properties", requirePropertyOwnerAuth, async (req, res) => {
     try {
-      const propertyData = insertPropertySchema.parse(req.body);
+      // Get authenticated user ID from middleware
+      const ownerId = req.userId;
+      if (!ownerId) {
+        return res.status(401).json({ error: "User authentication failed" });
+      }
+      
+      const propertyData = insertPropertySchema.parse({
+        ...req.body,
+        ownerId // Use authenticated user ID from token
+      });
+      
       const property = await storage.createProperty(propertyData);
       res.status(201).json(property);
     } catch (error: any) {
@@ -1049,9 +1067,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/room-categories", async (req, res) => {
+  app.post("/api/room-categories", requirePropertyOwnerAuth, async (req, res) => {
     try {
       const roomCategoryData = insertRoomCategorySchema.parse(req.body);
+      
+      // Get authenticated user ID from middleware
+      const authenticatedUserId = req.userId;
+      if (!authenticatedUserId) {
+        return res.status(401).json({ error: "User authentication failed" });
+      }
+      
+      // Verify the property belongs to the authenticated user
+      const property = await storage.getProperty(roomCategoryData.propertyId);
+      if (!property) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+      
+      if (property.ownerId !== authenticatedUserId) {
+        return res.status(403).json({ error: "Access denied: You can only add rooms to your own properties" });
+      }
+      
       const roomCategory = await storage.createRoomCategory(roomCategoryData);
       res.status(201).json(roomCategory);
     } catch (error: any) {

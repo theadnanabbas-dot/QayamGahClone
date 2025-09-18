@@ -21,14 +21,19 @@ interface PropertyCategory {
 }
 
 interface WizardFormData {
+  // Step 1
   propertyType?: "commercial" | "private";
+  // Step 2
   similarTo?: string;
+  // Step 3
   propertyName?: string;
   propertyPhone?: string;
   propertyAddress?: string;
+  cityId?: string;
   roomCategoriesCount?: number;
   propertySummary?: string;
   amenities?: string[];
+  // Step 4
   roomCategories?: Array<{
     name?: string;
     image?: string;
@@ -73,23 +78,53 @@ function AddPropertyContent() {
   // Create property mutation
   const createPropertyMutation = useMutation({
     mutationFn: async (wizardData: WizardFormData) => {
+      // Get authentication token
+      const token = localStorage.getItem("property_owner_token");
+      if (!token) {
+        throw new Error("Authentication required. Please log in again.");
+      }
+
+      // Validate required selections
+      if (!wizardData.propertyName?.trim()) {
+        throw new Error("Property name is required");
+      }
+      if (!wizardData.propertyPhone?.trim()) {
+        throw new Error("Property phone number is required");
+      }
+      if (!wizardData.propertyAddress?.trim()) {
+        throw new Error("Property address is required");
+      }
+      if (!wizardData.similarTo) {
+        throw new Error("Property category selection is required");
+      }
+      if (!wizardData.cityId) {
+        throw new Error("City selection is required");
+      }
+
+      // Find the selected category
+      const selectedCategory = categories.find(c => c.id === wizardData.similarTo) || 
+                              categories.find(c => c.slug === wizardData.similarTo);
+      if (!selectedCategory) {
+        throw new Error("Invalid property category selected");
+      }
+
       // Transform wizard data to property API format
       const propertyData = {
-        title: wizardData.propertyName || "",
+        title: wizardData.propertyName,
         description: wizardData.propertySummary || "",
         propertyType: wizardData.propertyType || "private",
-        phoneNumber: wizardData.propertyPhone || "",
+        phoneNumber: wizardData.propertyPhone,
         roomCategoriesCount: wizardData.roomCategoriesCount || 1,
-        slug: (wizardData.propertyName || "").toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || "property",
+        slug: wizardData.propertyName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
         // Use default pricing for now (will be replaced by room categories)
         pricePerHour: "500",
         pricePerDay: "5000", 
         minHours: 4,
         maxGuests: wizardData.roomCategories?.[0]?.maxGuestCapacity || 2,
-        address: wizardData.propertyAddress || "",
-        cityId: cities[0]?.id || "", // Default to first city for now
-        categoryId: categories.find(c => c.slug === wizardData.similarTo)?.id || categories[0]?.id || "",
-        ownerId: user?.id || "",
+        address: wizardData.propertyAddress,
+        cityId: wizardData.cityId,
+        categoryId: selectedCategory.id,
+        // Don't include ownerId - it's set server-side from auth token
         bedrooms: wizardData.roomCategories?.[0]?.beds || 1,
         bathrooms: wizardData.roomCategories?.[0]?.bathrooms || 1,
         amenities: wizardData.amenities || [],
@@ -105,6 +140,7 @@ function AddPropertyContent() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify(propertyData)
       });
@@ -136,6 +172,7 @@ function AddPropertyContent() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
           },
           body: JSON.stringify(roomData)
         });

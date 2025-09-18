@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, MapPin, Upload, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // Step 1: Property Type
@@ -47,13 +47,19 @@ const PropertyCategoryStep = ({ formData, onUpdate, categories }: {
   onUpdate: (data: Partial<WizardFormData>) => void;
   categories: PropertyCategory[];
 }) => {
-  const propertyTypeCategories = [
-    { id: "hotel", name: "Hotel", icon: "🏨" },
-    { id: "apartment", name: "Apartment", icon: "🏢" },
-    { id: "guest-house", name: "Guest House", icon: "🏡" },
-    { id: "motel", name: "Motel", icon: "🏩" },
-    { id: "house", name: "House", icon: "🏠" },
-  ];
+  // Map database categories to display icons
+  const getCategoryIcon = (slug: string) => {
+    switch (slug) {
+      case "apartments":
+        return "🏢";
+      case "houses":
+        return "🏠";
+      case "offices":
+        return "🏢";
+      default:
+        return "🏨";
+    }
+  };
 
   return (
     <div className="space-y-6" data-testid="step-property-category">
@@ -63,16 +69,16 @@ const PropertyCategoryStep = ({ formData, onUpdate, categories }: {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-2xl mx-auto">
-        {propertyTypeCategories.map((category) => (
+        {categories.map((category) => (
           <Button
             key={category.id}
             type="button"
             variant={formData.similarTo === category.id ? "default" : "outline"}
             className="h-20 flex flex-col space-y-2"
             onClick={() => onUpdate({ similarTo: category.id })}
-            data-testid={`button-category-${category.id}`}
+            data-testid={`button-category-${category.slug}`}
           >
-            <span className="text-lg">{category.icon}</span>
+            <span className="text-lg">{getCategoryIcon(category.slug)}</span>
             <span>{category.name}</span>
           </Button>
         ))}
@@ -133,6 +139,46 @@ const PropertyDetailsStep = ({ formData, onUpdate, cities, categories }: {
             onChange={(e) => onUpdate({ propertyAddress: e.target.value })}
             data-testid="input-property-address"
           />
+        </div>
+
+        {/* City Selection */}
+        <div>
+          <label className="block text-sm font-medium mb-2">City *</label>
+          <select
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={formData.cityId || ""}
+            onChange={(e) => onUpdate({ cityId: e.target.value })}
+            data-testid="select-city"
+          >
+            <option value="">Select a city</option>
+            {cities.map((city) => (
+              <option key={city.id} value={city.id}>
+                {city.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Google Map Placeholder */}
+        <div>
+          <label className="block text-sm font-medium mb-2">Location on Map</label>
+          <div className="w-full h-48 bg-gray-100 dark:bg-gray-800 border border-gray-300 rounded-lg flex items-center justify-center" data-testid="map-placeholder">
+            <div className="text-center text-gray-500 dark:text-gray-400">
+              <MapPin className="h-8 w-8 mx-auto mb-2" />
+              <p className="text-sm">Interactive Google Map</p>
+              <p className="text-xs">(Coming Soon)</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Property Photos Upload Placeholder */}
+        <div>
+          <label className="block text-sm font-medium mb-2">Property Photos</label>
+          <div className="w-full p-8 bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-300 rounded-lg text-center" data-testid="photo-upload-placeholder">
+            <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Upload property photos</p>
+            <p className="text-xs text-gray-400">Drag & drop images or click to browse (Coming Soon)</p>
+          </div>
         </div>
 
         {/* Room Categories */}
@@ -293,6 +339,16 @@ const RoomCategoriesStep = ({ formData, onUpdate }: {
                 </div>
               </div>
 
+              {/* Room Image Upload Placeholder */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Room Images</label>
+                <div className="w-full p-6 bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-300 rounded-lg text-center" data-testid={`room-photo-upload-${index}`}>
+                  <Camera className="h-6 w-6 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Upload room photos</p>
+                  <p className="text-xs text-gray-400">Multiple images supported (Coming Soon)</p>
+                </div>
+              </div>
+
               {/* Pricing Section */}
               <div>
                 <h4 className="font-medium mb-3">Pricing</h4>
@@ -394,6 +450,7 @@ interface WizardFormData {
   propertyName?: string;
   propertyPhone?: string;
   propertyAddress?: string;
+  cityId?: string;
   roomCategoriesCount?: number;
   propertySummary?: string;
   amenities?: string[];
@@ -438,7 +495,7 @@ export default function PropertyWizardModal({
       case 2:
         return !!formData.similarTo;
       case 3:
-        return !!(formData.propertyName && formData.propertyPhone && formData.propertyAddress);
+        return !!(formData.propertyName && formData.propertyPhone && formData.propertyAddress && formData.cityId);
       case 4:
         const roomCount = formData.roomCategoriesCount || 1;
         const roomCategories = formData.roomCategories || [];
