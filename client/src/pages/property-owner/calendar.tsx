@@ -22,15 +22,20 @@ import PropertyOwnerLayout from "./layout";
 
 interface Booking {
   id: string;
-  propertyId: string;
   roomCategoryId: string;
+  userId: string;
   customerName: string;
   customerEmail: string;
-  startTime: string;
-  selectedDate: string;
+  customerPhone: string | null;
+  guests: number;
   stayType: string;
+  startAt: Date;
+  endAt: Date;
   totalPrice: string;
+  currency: string;
+  paymentMethod: string;
   status: string;
+  createdAt: Date;
 }
 
 interface Property {
@@ -77,14 +82,20 @@ function CalendarContent() {
     queryKey: ["/api/room-categories"]
   });
 
-  // Filter bookings for the current property owner
+  // Filter bookings for the current property owner via room categories
+  const myRoomCategories = roomCategories.filter(rc => 
+    properties.some(property => property.id === rc.propertyId)
+  );
+
   const myBookings = bookings.filter(booking => 
-    properties.some(property => property.id === booking.propertyId)
+    myRoomCategories.some(rc => rc.id === booking.roomCategoryId)
   );
 
   // Apply filters
   const filteredBookings = myBookings.filter(booking => {
-    const propertyMatch = selectedProperty === 'all' || booking.propertyId === selectedProperty;
+    const roomCategory = myRoomCategories.find(rc => rc.id === booking.roomCategoryId);
+    const propertyId = roomCategory?.propertyId;
+    const propertyMatch = selectedProperty === 'all' || propertyId === selectedProperty;
     const statusMatch = selectedStatus === 'all' || booking.status.toLowerCase() === selectedStatus.toLowerCase();
     return propertyMatch && statusMatch;
   });
@@ -112,17 +123,26 @@ function CalendarContent() {
 
   const calendarDays = generateCalendarDays();
   
-  // Get bookings for a specific date
+  // Get bookings for a specific date (check if booking overlaps with the day)
   const getBookingsForDate = (date: Date) => {
-    const dateString = date.toISOString().split('T')[0];
-    return filteredBookings.filter(booking => 
-      booking.selectedDate === dateString
-    );
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    return filteredBookings.filter(booking => {
+      const bookingStart = new Date(booking.startAt);
+      const bookingEnd = new Date(booking.endAt);
+      // Check if booking overlaps with this day
+      return bookingStart < endOfDay && bookingEnd > startOfDay;
+    });
   };
 
-  // Get property name
-  const getPropertyName = (propertyId: string) => {
-    const property = properties.find(p => p.id === propertyId);
+  // Get property name via room category
+  const getPropertyName = (roomCategoryId: string) => {
+    const roomCategory = roomCategories.find(rc => rc.id === roomCategoryId);
+    if (!roomCategory) return 'Unknown Property';
+    const property = properties.find(p => p.id === roomCategory.propertyId);
     return property?.title || 'Unknown Property';
   };
 
@@ -191,12 +211,16 @@ function CalendarContent() {
     }
   };
 
-  const formatTimeSlot = (stayType: string, startTime: string) => {
+  const formatTimeSlot = (startAt: Date, endAt: Date, stayType: string) => {
+    const start = new Date(startAt);
+    const end = new Date(endAt);
+    const startTime = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const endTime = end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
     if (stayType === '24h') {
       return '24hr stay';
     }
-    const time = new Date(`2000-01-01T${startTime}`);
-    return `${stayType} from ${time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    return `${stayType} ${startTime}-${endTime}`;
   };
 
   if (!user) {
@@ -395,17 +419,17 @@ function CalendarContent() {
                           <div
                             key={booking.id}
                             className={`text-xs p-1 rounded border ${getStatusColor(booking.status)}`}
-                            title={`${getPropertyName(booking.propertyId)} - ${getRoomCategoryName(booking.roomCategoryId)} - ${booking.customerName}`}
+                            title={`${getPropertyName(booking.roomCategoryId)} - ${getRoomCategoryName(booking.roomCategoryId)} - ${booking.customerName}`}
                           >
                             <div className="font-medium truncate">
-                              {getPropertyName(booking.propertyId)}
+                              {getPropertyName(booking.roomCategoryId)}
                             </div>
                             <div className="truncate">
                               {getRoomCategoryName(booking.roomCategoryId)}
                             </div>
                             <div className="flex items-center space-x-1">
                               <Clock className="h-3 w-3" />
-                              <span>{formatTimeSlot(booking.stayType, booking.startTime)}</span>
+                              <span>{formatTimeSlot(booking.startAt, booking.endAt, booking.stayType)}</span>
                             </div>
                           </div>
                         ))}
