@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
@@ -11,13 +11,22 @@ import {
   Copy,
   Check,
   Eye,
-  CalendarDays as CalendarDaysIcon
+  CalendarDays as CalendarDaysIcon,
+  Plus,
+  Trash2,
+  RefreshCw,
+  Edit,
+  Link as LinkIcon
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import PropertyOwnerLayout from "./layout";
 
 interface Booking {
@@ -50,13 +59,51 @@ interface RoomCategory {
   name: string;
 }
 
+interface ImportedCalendar {
+  id: string;
+  userId: string;
+  name: string;
+  sourceUrl: string;
+  platform: string;
+  isActive: boolean;
+  lastSyncAt: Date | null;
+  lastSyncStatus: string;
+  syncErrorMessage: string | null;
+  createdAt: Date;
+}
+
+interface ImportedEvent {
+  id: string;
+  importedCalendarId: string;
+  externalId?: string;
+  summary: string;
+  description?: string;
+  startAt: Date;
+  endAt: Date;
+  isAllDay: boolean;
+  location?: string;
+  organizer?: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 function CalendarContent() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [selectedProperty, setSelectedProperty] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [copiedLink, setCopiedLink] = useState(false);
+  
+  // Import calendar state
+  const [importUrl, setImportUrl] = useState('');
+  const [importName, setImportName] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+  const [editingCalendar, setEditingCalendar] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Get current user from localStorage
   const [user, setUser] = useState<any>(null);
@@ -80,6 +127,106 @@ function CalendarContent() {
 
   const { data: roomCategories = [] } = useQuery<RoomCategory[]>({
     queryKey: ["/api/room-categories"]
+  });
+
+  // Fetch imported calendars
+  const { data: importedCalendars = [], isLoading: calendarsLoading } = useQuery<ImportedCalendar[]>({
+    queryKey: ["/api/imported-calendars"],
+    enabled: !!user
+  });
+
+  // Fetch imported events
+  const { data: importedEvents = [] } = useQuery<ImportedEvent[]>({
+    queryKey: ["/api/imported-events"],
+    enabled: !!user
+  });
+
+  // Mutations for imported calendars
+  const createCalendarMutation = useMutation({
+    mutationFn: async (data: { name: string; sourceUrl: string; platform?: string }) => {
+      return apiRequest('POST', '/api/imported-calendars', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/imported-calendars"] });
+      setImportUrl('');
+      setImportName('');
+      setIsImporting(false);
+      toast({
+        title: "Success",
+        description: "Calendar imported successfully"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to import calendar",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const updateCalendarMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { name: string } }) => {
+      return apiRequest('PATCH', `/api/imported-calendars/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/imported-calendars"] });
+      setEditingCalendar(null);
+      setEditName('');
+      toast({
+        title: "Success",
+        description: "Calendar updated successfully"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update calendar",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const deleteCalendarMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest('DELETE', `/api/imported-calendars/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/imported-calendars"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/imported-events"] });
+      toast({
+        title: "Success",
+        description: "Calendar deleted successfully"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete calendar",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const syncCalendarMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest('POST', `/api/imported-calendars/${id}/sync`);
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/imported-calendars"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/imported-events"] });
+      toast({
+        title: "Success",
+        description: data.message || "Calendar synced successfully"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Sync Error",
+        description: error.details || error.message || "Failed to sync calendar",
+        variant: "destructive"
+      });
+    }
   });
 
   // Filter bookings for the current property owner via room categories
@@ -223,6 +370,75 @@ function CalendarContent() {
     return `${stayType} ${startTime}-${endTime}`;
   };
 
+  // Import calendar handlers
+  const handleAddCalendar = () => {
+    if (!importUrl.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a calendar URL",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!importName.trim()) {
+      toast({
+        title: "Error", 
+        description: "Please enter a calendar name",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    createCalendarMutation.mutate({
+      name: importName.trim(),
+      sourceUrl: importUrl.trim(),
+      platform: "external"
+    });
+  };
+
+  const handleEditCalendar = (calendar: ImportedCalendar) => {
+    setEditingCalendar(calendar.id);
+    setEditName(calendar.name);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingCalendar || !editName.trim()) return;
+    
+    updateCalendarMutation.mutate({
+      id: editingCalendar,
+      data: { name: editName.trim() }
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCalendar(null);
+    setEditName('');
+  };
+
+  const handleDeleteCalendar = (id: string) => {
+    if (confirm('Are you sure you want to delete this imported calendar? All associated events will be removed.')) {
+      deleteCalendarMutation.mutate(id);
+    }
+  };
+
+  const handleSyncCalendar = (id: string) => {
+    syncCalendarMutation.mutate(id);
+  };
+
+  const getSyncStatusColor = (status: string) => {
+    switch (status) {
+      case 'success':
+        return 'text-green-600 bg-green-50 border-green-200';
+      case 'error':
+        return 'text-red-600 bg-red-50 border-red-200';
+      case 'pending':
+        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      default:
+        return 'text-gray-600 bg-gray-50 border-gray-200';
+    }
+  };
+
   if (!user) {
     return <div>Loading...</div>;
   }
@@ -334,6 +550,176 @@ function CalendarContent() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Import Calendars Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <LinkIcon className="h-5 w-5 mr-2" />
+            Import Calendars
+          </CardTitle>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Import external calendar feeds from Booking.com, Airbnb, and other platforms
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Add New Calendar Form */}
+          <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="import-url">Calendar URL (ICS/iCal)</Label>
+                  <Input
+                    id="import-url"
+                    placeholder="https://example.com/calendar.ics"
+                    value={importUrl}
+                    onChange={(e) => setImportUrl(e.target.value)}
+                    data-testid="input-import-url"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="import-name">Calendar Name</Label>
+                  <Input
+                    id="import-name"
+                    placeholder="Booking.com Calendar"
+                    value={importName}
+                    onChange={(e) => setImportName(e.target.value)}
+                    data-testid="input-import-name"
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={handleAddCalendar}
+                disabled={createCalendarMutation.isPending || !importUrl.trim() || !importName.trim()}
+                className="w-full md:w-auto"
+                data-testid="button-add-calendar"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {createCalendarMutation.isPending ? 'Adding...' : 'Add Calendar Link'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Imported Calendars List */}
+          {calendarsLoading ? (
+            <div className="text-center py-4">
+              <div className="text-sm text-gray-500">Loading calendars...</div>
+            </div>
+          ) : importedCalendars.length > 0 ? (
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                Imported Calendars ({importedCalendars.length})
+              </h3>
+              {importedCalendars.map((calendar) => (
+                <div
+                  key={calendar.id}
+                  className="border rounded-lg p-4 bg-white dark:bg-gray-900"
+                  data-testid={`calendar-item-${calendar.id}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      {editingCalendar === calendar.id ? (
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            className="flex-1"
+                            data-testid={`input-edit-name-${calendar.id}`}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleSaveEdit}
+                            disabled={updateCalendarMutation.isPending}
+                            data-testid={`button-save-edit-${calendar.id}`}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleCancelEdit}
+                            data-testid={`button-cancel-edit-${calendar.id}`}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                              {calendar.name}
+                            </h4>
+                            <Badge
+                              className={`text-xs ${getSyncStatusColor(calendar.lastSyncStatus)}`}
+                              data-testid={`badge-sync-status-${calendar.id}`}
+                            >
+                              {calendar.lastSyncStatus}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-500 truncate mt-1">
+                            {calendar.sourceUrl}
+                          </p>
+                          {calendar.lastSyncAt && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              Last synced: {new Date(calendar.lastSyncAt).toLocaleString()}
+                            </p>
+                          )}
+                          {calendar.syncErrorMessage && (
+                            <p className="text-xs text-red-600 mt-1">
+                              Error: {calendar.syncErrorMessage}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {editingCalendar !== calendar.id && (
+                      <div className="flex items-center space-x-2 ml-4">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditCalendar(calendar)}
+                          data-testid={`button-edit-calendar-${calendar.id}`}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleSyncCalendar(calendar.id)}
+                          disabled={syncCalendarMutation.isPending}
+                          data-testid={`button-refresh-calendar-${calendar.id}`}
+                        >
+                          <RefreshCw className={`h-4 w-4 ${syncCalendarMutation.isPending ? 'animate-spin' : ''}`} />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteCalendar(calendar.id)}
+                          disabled={deleteCalendarMutation.isPending}
+                          data-testid={`button-delete-calendar-${calendar.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+              <LinkIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                No imported calendars
+              </h3>
+              <p className="text-gray-500 mb-4">
+                Add your first external calendar to sync events from other platforms.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Calendar Navigation */}
       <Card>
