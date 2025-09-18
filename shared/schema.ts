@@ -128,6 +128,35 @@ export const vendors = pgTable("vendors", {
   approvedAt: timestamp("approved_at"),
 });
 
+export const importedCalendars = pgTable("imported_calendars", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(), // User-editable display name
+  sourceUrl: text("source_url").notNull(), // ICS feed URL
+  platform: text("platform").notNull().default("external"), // "booking_com", "airbnb", "vrbo", "external"
+  isActive: boolean("is_active").notNull().default(true),
+  lastSyncAt: timestamp("last_sync_at"),
+  lastSyncStatus: text("last_sync_status").default("pending"), // "success", "error", "pending"
+  syncErrorMessage: text("sync_error_message"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const importedEvents = pgTable("imported_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  importedCalendarId: varchar("imported_calendar_id").notNull().references(() => importedCalendars.id),
+  externalId: text("external_id"), // Original event ID from ICS
+  summary: text("summary").notNull(), // Event title/summary
+  description: text("description"),
+  startAt: timestamp("start_at").notNull(),
+  endAt: timestamp("end_at").notNull(),
+  isAllDay: boolean("is_all_day").notNull().default(false),
+  location: text("location"),
+  organizer: text("organizer"),
+  status: text("status").default("confirmed"), // "confirmed", "tentative", "cancelled"
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   passwordHash: true,
@@ -222,6 +251,34 @@ export const updateVendorSchema = createInsertSchema(vendors).omit({
   status: z.enum(["pending", "approved", "rejected"]).optional(),
 });
 
+export const insertImportedCalendarSchema = createInsertSchema(importedCalendars).omit({
+  id: true,
+  createdAt: true,
+  lastSyncAt: true,
+}).extend({
+  platform: z.enum(["booking_com", "airbnb", "vrbo", "external"]).default("external"),
+  lastSyncStatus: z.enum(["success", "error", "pending"]).default("pending"),
+});
+
+export const updateImportedCalendarSchema = createInsertSchema(importedCalendars).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+}).partial().extend({
+  platform: z.enum(["booking_com", "airbnb", "vrbo", "external"]).optional(),
+  lastSyncStatus: z.enum(["success", "error", "pending"]).optional(),
+});
+
+export const insertImportedEventSchema = createInsertSchema(importedEvents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  startAt: z.coerce.date(),
+  endAt: z.coerce.date(),
+  status: z.enum(["confirmed", "tentative", "cancelled"]).default("confirmed"),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type LoginUser = z.infer<typeof loginUserSchema>;
@@ -249,3 +306,9 @@ export type Booking = typeof bookings.$inferSelect;
 
 export type InsertVendor = z.infer<typeof insertVendorSchema>;
 export type Vendor = typeof vendors.$inferSelect;
+
+export type InsertImportedCalendar = z.infer<typeof insertImportedCalendarSchema>;
+export type ImportedCalendar = typeof importedCalendars.$inferSelect;
+
+export type InsertImportedEvent = z.infer<typeof insertImportedEventSchema>;
+export type ImportedEvent = typeof importedEvents.$inferSelect;
