@@ -26,6 +26,7 @@ import PropertyOwnerDashboardNew from "@/pages/property-owner/dashboard";
 import PropertyOwnerAddProperty from "@/pages/property-owner/add-property";
 import PropertyOwnerProperties from "@/pages/property-owner/properties";
 import PropertyOwnerBookings from "@/pages/property-owner/bookings";
+import PropertyOwnerCalendar from "@/pages/property-owner/calendar";
 import PropertyOwnerTransactions from "@/pages/property-owner/transactions";
 import PropertyOwnerProfile from "@/pages/property-owner/profile";
 import Checkout from "@/pages/checkout";
@@ -51,6 +52,7 @@ function Router() {
       <Route path="/property-owner/add-property" component={PropertyOwnerAddProperty} />
       <Route path="/property-owner/properties" component={PropertyOwnerProperties} />
       <Route path="/property-owner/bookings" component={PropertyOwnerBookings} />
+      <Route path="/property-owner/calendar" component={PropertyOwnerCalendar} />
       <Route path="/property-owner/transactions" component={PropertyOwnerTransactions} />
       <Route path="/property-owner/profile" component={PropertyOwnerProfile} />
       <Route path="/property-owner" component={PropertyOwnerDashboardNew} />

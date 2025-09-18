@@ -5,6 +5,7 @@ import {
   Plus,
   Building2,
   Calendar, 
+  CalendarDays,
   CreditCard,
   User,
   LogOut,
@@ -43,6 +44,12 @@ const navigation = [
     name: "Bookings",
     href: "/property-owner/bookings",
     icon: Calendar,
+    exact: false
+  },
+  {
+    name: "Calendar",
+    href: "/property-owner/calendar",
+    icon: CalendarDays,
     exact: false
   },
   {
