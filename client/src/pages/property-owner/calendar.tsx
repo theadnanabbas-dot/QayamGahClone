@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -101,6 +102,7 @@ function CalendarContent() {
   const [isImporting, setIsImporting] = useState(false);
   const [editingCalendar, setEditingCalendar] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [localToggleStates, setLocalToggleStates] = useState<Record<string, boolean>>({});
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -248,6 +250,71 @@ function CalendarContent() {
         description: error.message || "Failed to sync calendars",
         variant: "destructive"
       });
+    }
+  });
+
+  // Toggle calendar active status mutation
+  const toggleCalendarMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      return apiRequest('PUT', `/api/imported-calendars/${id}`, { isActive });
+    },
+    onMutate: async ({ id, isActive }) => {
+      console.log(`[OPTIMISTIC] Starting optimistic update for calendar ${id} to ${isActive}`);
+      
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ["/api/imported-calendars"] });
+
+      // Snapshot the previous value
+      const previousCalendars = queryClient.getQueryData(["/api/imported-calendars"]);
+      console.log('[OPTIMISTIC] Previous calendars:', previousCalendars);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(["/api/imported-calendars"], (old: any) => {
+        console.log('[OPTIMISTIC] Old data:', old);
+        if (!old) return old;
+        const updated = old.map((calendar: any) => 
+          calendar.id === id ? { ...calendar, isActive } : calendar
+        );
+        console.log('[OPTIMISTIC] Updated data:', updated);
+        return updated;
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousCalendars };
+    },
+    onSuccess: (data, variables) => {
+      // Clear local state so server state takes over
+      setLocalToggleStates(prev => {
+        const newState = { ...prev };
+        delete newState[variables.id];
+        return newState;
+      });
+      
+      toast({
+        title: "Success",
+        description: "Calendar status updated successfully"
+      });
+    },
+    onError: (err, variables, context) => {
+      // Clear local state and revert to server state
+      setLocalToggleStates(prev => {
+        const newState = { ...prev };
+        delete newState[variables.id];
+        return newState;
+      });
+      
+      // If the mutation fails, use the context returned from onMutate to roll back
+      queryClient.setQueryData(["/api/imported-calendars"], context?.previousCalendars);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to update calendar status",
+        variant: "destructive"
+      });
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: ["/api/imported-calendars"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/imported-events"] });
     }
   });
 
@@ -557,6 +624,19 @@ function CalendarContent() {
     syncCalendarMutation.mutate(id);
   };
 
+  const handleToggleCalendar = (id: string, isActive: boolean) => {
+    console.log(`Toggling calendar ${id} to ${isActive ? 'active' : 'inactive'}`);
+    
+    // Immediately update local state for instant UI feedback
+    setLocalToggleStates(prev => ({
+      ...prev,
+      [id]: isActive
+    }));
+    
+    // Call server API
+    toggleCalendarMutation.mutate({ id, isActive });
+  };
+
   const getSyncStatusColor = (status: string) => {
     switch (status) {
       case 'success':
@@ -761,7 +841,11 @@ function CalendarContent() {
               {importedCalendars.map((calendar) => (
                 <div
                   key={calendar.id}
-                  className="border rounded-lg p-4 bg-white dark:bg-gray-900"
+                  className={`border rounded-lg p-4 transition-all ${
+                    calendar.isActive 
+                      ? 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700' 
+                      : 'bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 opacity-60'
+                  }`}
                   data-testid={`calendar-item-${calendar.id}`}
                 >
                   <div className="flex items-center justify-between">
@@ -823,6 +907,16 @@ function CalendarContent() {
                     
                     {editingCalendar !== calendar.id && (
                       <div className="flex items-center space-x-2 ml-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={localToggleStates[calendar.id] !== undefined ? localToggleStates[calendar.id] : calendar.isActive}
+                            onCheckedChange={(checked) => handleToggleCalendar(calendar.id, checked)}
+                            data-testid={`switch-calendar-active-${calendar.id}`}
+                          />
+                          <span className="text-xs text-gray-500">
+                            {(localToggleStates[calendar.id] !== undefined ? localToggleStates[calendar.id] : calendar.isActive) ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
                         <Button
                           size="sm"
                           variant="outline"
