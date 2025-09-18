@@ -92,7 +92,8 @@ export interface IStorage {
   // Booking Availability
   isPropertyAvailable(propertyId: string, startAt: Date, endAt: Date, excludeBookingId?: string): Promise<boolean>;
   getBookingsForProperty(propertyId: string, startAt?: Date, endAt?: Date): Promise<Booking[]>;
-  calculateBookingPrice(propertyId: string, startAt: Date, endAt: Date): Promise<{ totalPrice: number; hours: number } | null>;
+  calculateBookingPrice(roomCategoryId: string, stayType: string, startAt: Date, endAt: Date): Promise<{ totalPrice: number; stayType: string } | null>;
+  isRoomCategoryAvailable(roomCategoryId: string, startAt: Date, endAt: Date, excludeBookingId?: string): Promise<boolean>;
   
   // Vendors
   getVendors(): Promise<Vendor[]>;
@@ -236,12 +237,23 @@ export class MemStorage implements IStorage {
       properties = properties.filter(p => p.isFeature === filters.featured);
     }
     
-    if (filters?.priceMin !== undefined) {
-      properties = properties.filter(p => parseFloat(p.pricePerHour) >= filters.priceMin!);
-    }
-    
-    if (filters?.priceMax !== undefined) {
-      properties = properties.filter(p => parseFloat(p.pricePerHour) <= filters.priceMax!);
+    // Price filtering now uses room category pricing (use minimum 4h price as reference)
+    if (filters?.priceMin !== undefined || filters?.priceMax !== undefined) {
+      const propertyIds = properties.map(p => p.id);
+      const roomCategories = Array.from(this.roomCategories.values()).filter(rc => 
+        propertyIds.includes(rc.propertyId)
+      );
+      
+      const validPropertyIds = new Set<string>();
+      
+      roomCategories.forEach(rc => {
+        const minPrice = parseFloat(rc.pricePer4Hours); // Use 4h as base price reference
+        if (filters.priceMin !== undefined && minPrice < filters.priceMin) return;
+        if (filters.priceMax !== undefined && minPrice > filters.priceMax) return;
+        validPropertyIds.add(rc.propertyId);
+      });
+      
+      properties = properties.filter(p => validPropertyIds.has(p.id));
     }
     
     if (filters?.minRating !== undefined) {
@@ -273,13 +285,11 @@ export class MemStorage implements IStorage {
       propertyType: insertProperty.propertyType ?? "private",
       phoneNumber: insertProperty.phoneNumber ?? null,
       roomCategoriesCount: insertProperty.roomCategoriesCount ?? 1,
-      pricePerDay: insertProperty.pricePerDay ?? null,
       latitude: insertProperty.latitude ?? null,
       longitude: insertProperty.longitude ?? null,
       cityId: insertProperty.cityId ?? null,
       categoryId: insertProperty.categoryId ?? null,
       ownerId: insertProperty.ownerId ?? null,
-      minHours: insertProperty.minHours ?? 1,
       maxGuests: insertProperty.maxGuests ?? 1,
       bedrooms: insertProperty.bedrooms ?? 0,
       bathrooms: insertProperty.bathrooms ?? 0,
@@ -505,8 +515,42 @@ export class MemStorage implements IStorage {
       return false;
     }
 
+    // Get all room categories for this property
+    const roomCategories = Array.from(this.roomCategories.values()).filter(rc => 
+      rc.propertyId === propertyId
+    );
+    const roomCategoryIds = roomCategories.map(rc => rc.id);
+
     const bookings = Array.from(this.bookings.values()).filter(booking => 
-      booking.propertyId === propertyId && 
+      roomCategoryIds.includes(booking.roomCategoryId) && 
+      booking.status !== 'CANCELLED' &&
+      (excludeBookingId ? booking.id !== excludeBookingId : true)
+    );
+
+    for (const booking of bookings) {
+      // Check for overlap: booking conflicts if new booking overlaps with existing ones
+      if (startAt < booking.endAt && endAt > booking.startAt) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  async isRoomCategoryAvailable(roomCategoryId: string, startAt: Date, endAt: Date, excludeBookingId?: string): Promise<boolean> {
+    const roomCategory = this.roomCategories.get(roomCategoryId);
+    if (!roomCategory) {
+      return false;
+    }
+
+    // Check if the associated property is active
+    const property = this.properties.get(roomCategory.propertyId);
+    if (!property || !property.isActive) {
+      return false;
+    }
+
+    const bookings = Array.from(this.bookings.values()).filter(booking => 
+      booking.roomCategoryId === roomCategoryId && 
       booking.status !== 'CANCELLED' &&
       (excludeBookingId ? booking.id !== excludeBookingId : true)
     );
@@ -522,8 +566,15 @@ export class MemStorage implements IStorage {
   }
 
   async getBookingsForProperty(propertyId: string, startAt?: Date, endAt?: Date): Promise<Booking[]> {
+    // Get all room categories for this property
+    const roomCategories = Array.from(this.roomCategories.values()).filter(rc => 
+      rc.propertyId === propertyId
+    );
+    const roomCategoryIds = roomCategories.map(rc => rc.id);
+
+    // Filter bookings by room categories belonging to this property
     let bookings = Array.from(this.bookings.values()).filter(booking => 
-      booking.propertyId === propertyId
+      roomCategoryIds.includes(booking.roomCategoryId)
     );
 
     if (startAt) {
@@ -537,35 +588,97 @@ export class MemStorage implements IStorage {
     return bookings.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   }
 
-  async calculateBookingPrice(propertyId: string, startAt: Date, endAt: Date): Promise<{ totalPrice: number; hours: number } | null> {
-    const property = this.properties.get(propertyId);
-    if (!property) {
-      return null;
-    }
-
-    const hoursDiff = (endAt.getTime() - startAt.getTime()) / (1000 * 60 * 60);
-    const hours = Math.ceil(hoursDiff);
-
-    if (hours < property.minHours) {
-      return null;
-    }
-
-    const hourlyRate = parseFloat(property.pricePerHour);
-    let totalPrice = hours * hourlyRate;
-
-    // Apply daily rate if available and beneficial
-    if (property.pricePerDay && hours >= 24) {
-      const dailyRate = parseFloat(property.pricePerDay);
-      const days = Math.floor(hours / 24);
-      const remainingHours = hours % 24;
-      const dailyTotal = days * dailyRate + remainingHours * hourlyRate;
+  // Server-side duration validation and stay type derivation
+  private validateAndDeriveStayType(startAt: Date, endAt: Date, clientStayType?: string): { stayType: string; isValid: boolean; error?: string } {
+    const timeDiffMs = endAt.getTime() - startAt.getTime();
+    const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
+    
+    // Check if times are on same calendar day for micro-stays
+    const isSameDay = startAt.toDateString() === endAt.toDateString();
+    
+    let derivedStayType: string;
+    let validationError: string | undefined;
+    
+    // Derive stay type from duration with tolerance
+    const tolerance = 0.1; // 6-minute tolerance for rounding
+    if (Math.abs(timeDiffHours - 4) <= tolerance && isSameDay) {
+      derivedStayType = '4h';
+    } else if (Math.abs(timeDiffHours - 6) <= tolerance && isSameDay) {
+      derivedStayType = '6h';
+    } else if (Math.abs(timeDiffHours - 12) <= tolerance && isSameDay) {
+      derivedStayType = '12h';
+    } else {
+      // Check for 24h+ booking - must span multiple calendar days
+      const startDate = new Date(startAt.toDateString());
+      const endDate = new Date(endAt.toDateString());
+      const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
       
-      if (dailyTotal < totalPrice) {
-        totalPrice = dailyTotal;
+      if (daysDiff >= 1 && daysDiff <= 15) { // 1-15 nights (2-16 calendar days)
+        // Validate check-in/check-out times (flexible for now, can be enforced later)
+        derivedStayType = '24h';
+      } else if (daysDiff < 1) {
+        validationError = 'Invalid duration: Must be exactly 4h, 6h, 12h (same day) or 24h+ (multiple days)';
+      } else {
+        validationError = 'Invalid duration: 24h bookings cannot exceed 15 nights (16 calendar days)';
       }
     }
+    
+    // Validate against client-provided stay type if provided
+    if (clientStayType && clientStayType !== derivedStayType) {
+      validationError = `Duration mismatch: Requested ${clientStayType} but duration corresponds to ${derivedStayType || 'invalid'}`;
+    }
+    
+    return {
+      stayType: derivedStayType || 'invalid',
+      isValid: !validationError,
+      error: validationError
+    };
+  }
 
-    return { totalPrice, hours };
+  async calculateBookingPrice(roomCategoryId: string, stayType: string, startAt: Date, endAt: Date): Promise<{ totalPrice: number; stayType: string } | null> {
+    const roomCategory = this.roomCategories.get(roomCategoryId);
+    if (!roomCategory) {
+      return null;
+    }
+
+    // Validate duration and derive actual stay type from timestamps
+    const validation = this.validateAndDeriveStayType(startAt, endAt, stayType);
+    if (!validation.isValid) {
+      throw new Error(validation.error || 'Invalid booking duration');
+    }
+
+    const validatedStayType = validation.stayType;
+
+    // Get the fixed price based on validated stay type
+    let unitPrice: number;
+    switch (validatedStayType) {
+      case '4h':
+        unitPrice = parseFloat(roomCategory.pricePer4Hours);
+        break;
+      case '6h':
+        unitPrice = parseFloat(roomCategory.pricePer6Hours);
+        break;
+      case '12h':
+        unitPrice = parseFloat(roomCategory.pricePer12Hours);
+        break;
+      case '24h':
+        unitPrice = parseFloat(roomCategory.pricePer24Hours);
+        break;
+      default:
+        throw new Error(`Invalid stay type: ${validatedStayType}`);
+    }
+
+    let totalPrice = unitPrice;
+
+    // For 24h bookings, calculate number of nights based on calendar days
+    if (validatedStayType === '24h') {
+      const startDate = new Date(startAt.toDateString());
+      const endDate = new Date(endAt.toDateString());
+      const nights = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+      totalPrice = unitPrice * nights;
+    }
+
+    return { totalPrice, stayType: validatedStayType };
   }
 
   // Enhanced createBooking with validation and availability checking
@@ -579,40 +692,42 @@ export class MemStorage implements IStorage {
       throw new Error('Booking start time must be in the future');
     }
 
-    // Check property exists and is active
-    const property = this.properties.get(insertBooking.propertyId);
+    // Check room category exists and get associated property
+    const roomCategory = this.roomCategories.get(insertBooking.roomCategoryId);
+    if (!roomCategory) {
+      throw new Error('Room category not found');
+    }
+
+    const property = this.properties.get(roomCategory.propertyId);
     if (!property) {
-      throw new Error('Property not found');
+      throw new Error('Associated property not found');
     }
 
     if (!property.isActive) {
       throw new Error('Property is not available for booking');
     }
 
-    // Check availability
-    const isAvailable = await this.isPropertyAvailable(
-      insertBooking.propertyId, 
+    // Check availability for this room category
+    const isAvailable = await this.isRoomCategoryAvailable(
+      insertBooking.roomCategoryId, 
       insertBooking.startAt, 
       insertBooking.endAt
     );
 
     if (!isAvailable) {
-      throw new Error('Property is not available for the requested time period');
+      throw new Error('Room category is not available for the requested time period');
     }
 
     // Calculate and validate price
     const priceCalculation = await this.calculateBookingPrice(
-      insertBooking.propertyId, 
+      insertBooking.roomCategoryId, 
+      insertBooking.stayType,
       insertBooking.startAt, 
       insertBooking.endAt
     );
 
     if (!priceCalculation) {
       throw new Error('Unable to calculate price for this booking');
-    }
-
-    if (priceCalculation.hours < property.minHours) {
-      throw new Error(`Minimum booking duration is ${property.minHours} hours`);
     }
 
     // Validate status transitions
