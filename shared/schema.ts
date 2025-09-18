@@ -79,6 +79,10 @@ export const bookings = pgTable("bookings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   roomCategoryId: varchar("room_category_id").notNull().references(() => roomCategories.id),
   userId: varchar("user_id").notNull().references(() => users.id),
+  customerName: text("customer_name").notNull(),
+  customerEmail: text("customer_email").notNull(),
+  customerPhone: text("customer_phone"),
+  guests: integer("guests").notNull().default(1),
   stayType: text("stay_type").notNull(), // "4h", "6h", "12h", "24h"
   startAt: timestamp("start_at").notNull(),
   endAt: timestamp("end_at").notNull(),

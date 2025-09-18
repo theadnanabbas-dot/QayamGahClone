@@ -15,7 +15,6 @@ interface Property {
   description: string;
   address: string;
   city: string;
-  pricePerHour: string;
   rating: string;
   images: string[];
   isNew: boolean;
@@ -25,8 +24,21 @@ interface Property {
   latitude: string;
   longitude: string;
   ownerId: string;
-  minHours?: number;
   maxGuests?: number;
+}
+
+interface RoomCategory {
+  id: string;
+  propertyId: string;
+  name: string;
+  maxGuestCapacity: number;
+  pricePer4Hours: string;
+  pricePer6Hours: string;
+  pricePer12Hours: string;
+  pricePer24Hours: string;
+  beds: number;
+  bathrooms: number;
+  areaSqFt?: number;
 }
 
 // Header Component
@@ -118,6 +130,15 @@ export default function PropertyDetails() {
   });
 
   const property = properties?.find(p => p.slug === slug);
+
+  // Get room categories for this property
+  const { data: roomCategories } = useQuery<RoomCategory[]>({
+    queryKey: ["/api/room-categories", property?.id],
+    queryFn: () => 
+      fetch(`/api/room-categories?propertyId=${property!.id}`)
+        .then(res => res.json()),
+    enabled: !!property?.id,
+  });
 
   if (isLoading) {
     return (
@@ -285,18 +306,23 @@ export default function PropertyDetails() {
 
           {/* Booking Sidebar */}
           <div className="lg:col-span-1">
-            <CalendarBooking 
-              property={{
-                id: property.id,
-                title: property.title,
-                pricePerHour: parseFloat(property.pricePerHour),
-                minHours: property.minHours || 2,
-                maxGuests: property.maxGuests || 4
-              }}
-              onBookingSuccess={(booking) => {
-                console.log('Booking created:', booking);
-              }}
-            />
+            {roomCategories && roomCategories.length > 0 ? (
+              <CalendarBooking 
+                property={{
+                  id: property.id,
+                  title: property.title,
+                  maxGuests: property.maxGuests || 4
+                }}
+                roomCategories={roomCategories}
+                onBookingSuccess={(booking) => {
+                  console.log('Booking created:', booking);
+                }}
+              />
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
+                <p className="text-gray-500 dark:text-gray-400">Loading booking options...</p>
+              </div>
+            )}
             <LegacyBookingForm property={property} />
           </div>
         </div>

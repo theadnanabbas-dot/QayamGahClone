@@ -1395,12 +1395,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/properties/:propertyId/calculate-price", async (req, res) => {
     try {
       const { propertyId } = req.params;
-      const { startAt, endAt } = req.body;
+      const { roomCategoryId, stayType, startAt, endAt } = req.body;
 
       if (!startAt || !endAt) {
         return res
           .status(400)
           .json({ error: "startAt and endAt are required" });
+      }
+
+      if (!roomCategoryId) {
+        return res
+          .status(400)
+          .json({ error: "roomCategoryId is required" });
+      }
+
+      if (!stayType) {
+        return res
+          .status(400)
+          .json({ error: "stayType is required" });
       }
 
       const startDate = new Date(startAt);
@@ -1410,10 +1422,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid date format" });
       }
 
+      // Verify the room category belongs to the requested property
+      const roomCategory = await storage.getRoomCategory(roomCategoryId);
+      if (!roomCategory) {
+        return res.status(404).json({ error: "Room category not found" });
+      }
+
+      if (roomCategory.propertyId !== propertyId) {
+        return res.status(400).json({ error: "Room category does not belong to this property" });
+      }
+
       const priceCalculation = await storage.calculateBookingPrice(
-        propertyId,
+        roomCategoryId,
+        stayType,
         startDate,
-        endDate,
+        endDate
       );
 
       if (!priceCalculation) {

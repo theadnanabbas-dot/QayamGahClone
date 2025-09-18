@@ -135,13 +135,10 @@ export async function loadSampleData() {
   const properties = [];
   
   // Featured Properties (Premium Hotels & Apartments)
-  properties.push(await storage.createProperty({
+  const pearlContinental = await storage.createProperty({
     title: "Pearl Continental Karachi",
     slug: "pearl-continental-karachi",
     description: "Luxury 5-star hotel in the heart of Karachi with world-class amenities and services. Perfect for business travelers and hourly bookings.",
-    pricePerHour: 150.00,
-    pricePerDay: 2800.00,
-    minHours: 2,
     maxGuests: 4,
     address: "Club Road, Karachi",
     latitude: 24.8151,
@@ -157,11 +154,26 @@ export async function loadSampleData() {
       "/api/images/properties/pearl-continental-2.jpg",
       "/api/images/properties/pearl-continental-3.jpg"
     ],
-    mainImage: "/api/images/properties/pearl-continental-main.jpg",
     isFeature: true,
     isActive: true,
-    rating: 4.8
-  }));
+    rating: "4.8"
+  });
+  properties.push(pearlContinental);
+
+  // Create room categories for Pearl Continental
+  await storage.createRoomCategory({
+    propertyId: pearlContinental.id,
+    name: "Deluxe Room",
+    image: "/api/images/properties/pearl-continental-deluxe.jpg",
+    maxGuestCapacity: 4,
+    bathrooms: 1,
+    beds: 2,
+    areaSqFt: 350,
+    pricePer4Hours: "150.00",
+    pricePer6Hours: "200.00", 
+    pricePer12Hours: "350.00",
+    pricePer24Hours: "650.00"
+  });
 
   properties.push(await storage.createProperty({
     title: "Serena Hotel Islamabad",

@@ -17,9 +17,21 @@ import { format, addHours, addDays, startOfDay, isAfter, isBefore } from "date-f
 interface Property {
   id: string;
   title: string;
-  pricePerHour: number;
-  minHours: number;
   maxGuests: number;
+}
+
+interface RoomCategory {
+  id: string;
+  propertyId: string;
+  name: string;
+  maxGuestCapacity: number;
+  pricePer4Hours: string;
+  pricePer6Hours: string;
+  pricePer12Hours: string;
+  pricePer24Hours: string;
+  beds: number;
+  bathrooms: number;
+  areaSqFt?: number;
 }
 
 interface Booking {
@@ -32,18 +44,20 @@ interface Booking {
 
 interface PriceCalculation {
   totalPrice: number;
-  hours: number;
+  stayType: string;
 }
 
 interface CalendarBookingProps {
   property: Property;
+  roomCategories: RoomCategory[];
   onBookingSuccess?: (booking: any) => void;
 }
 
-export default function CalendarBooking({ property, onBookingSuccess }: CalendarBookingProps) {
+export default function CalendarBooking({ property, roomCategories, onBookingSuccess }: CalendarBookingProps) {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [startTime, setStartTime] = useState("09:00");
-  const [duration, setDuration] = useState(property.minHours.toString());
+  const [stayType, setStayType] = useState<string>("4h");
+  const [selectedRoomCategory, setSelectedRoomCategory] = useState<string>(roomCategories[0]?.id || "");
   const [guests, setGuests] = useState("1");
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
@@ -64,7 +78,7 @@ export default function CalendarBooking({ property, onBookingSuccess }: Calendar
 
   // Price calculation mutation
   const priceCalculationMutation = useMutation({
-    mutationFn: async (data: { startAt: Date; endAt: Date }) => {
+    mutationFn: async (data: { roomCategoryId: string; stayType: string; startAt: Date; endAt: Date }) => {
       const response = await fetch(`/api/properties/${property.id}/calculate-price`, {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
@@ -110,24 +124,43 @@ export default function CalendarBooking({ property, onBookingSuccess }: Calendar
     }
   });
 
-  // Calculate price when date/time changes
+  // Calculate price when date/time/stayType changes
   useEffect(() => {
-    if (selectedDate && startTime && duration) {
+    if (selectedDate && startTime && stayType && selectedRoomCategory) {
       const startDateTime = new Date(selectedDate);
       const [hours, minutes] = startTime.split(':').map(Number);
       startDateTime.setHours(hours, minutes, 0, 0);
       
-      const endDateTime = addHours(startDateTime, parseInt(duration));
+      // Calculate end time based on stay type
+      let endDateTime: Date;
+      switch (stayType) {
+        case '4h':
+          endDateTime = addHours(startDateTime, 4);
+          break;
+        case '6h':
+          endDateTime = addHours(startDateTime, 6);
+          break;
+        case '12h':
+          endDateTime = addHours(startDateTime, 12);
+          break;
+        case '24h':
+          endDateTime = addDays(startDateTime, 1); // Next day, same time
+          break;
+        default:
+          return;
+      }
       
       // Only calculate if the booking is in the future
       if (isAfter(startDateTime, new Date())) {
         priceCalculationMutation.mutate({
+          roomCategoryId: selectedRoomCategory,
+          stayType: stayType,
           startAt: startDateTime,
           endAt: endDateTime
         });
       }
     }
-  }, [selectedDate, startTime, duration]);
+  }, [selectedDate, startTime, stayType, selectedRoomCategory]);
 
   // Check if a date has any bookings
   const dateHasBookings = (date: Date) => {
@@ -150,7 +183,23 @@ export default function CalendarBooking({ property, onBookingSuccess }: Calendar
       const slotStart = new Date(selectedDate);
       slotStart.setHours(hour, 0, 0, 0);
       
-      const slotEnd = addHours(slotStart, parseInt(duration));
+      let slotEnd: Date;
+      switch (stayType) {
+        case '4h':
+          slotEnd = addHours(slotStart, 4);
+          break;
+        case '6h':
+          slotEnd = addHours(slotStart, 6);
+          break;
+        case '12h':
+          slotEnd = addHours(slotStart, 12);
+          break;
+        case '24h':
+          slotEnd = addDays(slotStart, 1);
+          break;
+        default:
+          slotEnd = addHours(slotStart, 4);
+      }
       
       // Check if this time slot conflicts with existing bookings
       const hasConflict = existingBookings.some(booking => {
@@ -185,13 +234,34 @@ export default function CalendarBooking({ property, onBookingSuccess }: Calendar
     const [hours, minutes] = startTime.split(':').map(Number);
     startDateTime.setHours(hours, minutes, 0, 0);
     
-    const endDateTime = addHours(startDateTime, parseInt(duration));
+    let endDateTime: Date;
+    switch (stayType) {
+      case '4h':
+        endDateTime = addHours(startDateTime, 4);
+        break;
+      case '6h':
+        endDateTime = addHours(startDateTime, 6);
+        break;
+      case '12h':
+        endDateTime = addHours(startDateTime, 12);
+        break;
+      case '24h':
+        endDateTime = addDays(startDateTime, 1);
+        break;
+      default:
+        endDateTime = addHours(startDateTime, 4);
+    }
 
-    // For demo purposes, we'll create a guest user booking
-    // In a real app, this would use the authenticated user's ID
+    // Include all required booking fields
     const bookingData = {
       propertyId: property.id,
+      roomCategoryId: selectedRoomCategory,
+      stayType: stayType,
       userId: "guest-user-id", // In real app, get from auth context
+      customerName: customerInfo.name,
+      customerEmail: customerInfo.email,
+      customerPhone: customerInfo.phone,
+      guests: parseInt(guests),
       startAt: startDateTime.toISOString(),
       endAt: endDateTime.toISOString(),
       status: "PENDING"
@@ -289,22 +359,19 @@ export default function CalendarBooking({ property, onBookingSuccess }: Calendar
           </div>
         )}
 
-        {/* Duration Selection */}
+        {/* Stay Type Selection */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2" data-testid="duration-selection">
-            <label className="text-sm font-medium">Duration (hours)</label>
-            <Select value={duration} onValueChange={setDuration} data-testid="duration-select">
+          <div className="space-y-2" data-testid="stay-type-selection">
+            <label className="text-sm font-medium">Stay Duration</label>
+            <Select value={stayType} onValueChange={setStayType} data-testid="stay-type-select">
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Select duration" />
               </SelectTrigger>
               <SelectContent>
-                {Array.from({ length: Math.min(12, 24 - property.minHours + 1) }, (_, i) => 
-                  property.minHours + i
-                ).map((hours) => (
-                  <SelectItem key={hours} value={hours.toString()}>
-                    {hours} hour{hours > 1 ? 's' : ''}
-                  </SelectItem>
-                ))}
+                <SelectItem value="4h">4 hours</SelectItem>
+                <SelectItem value="6h">6 hours</SelectItem>
+                <SelectItem value="12h">12 hours</SelectItem>
+                <SelectItem value="24h">24 hours</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -364,11 +431,24 @@ export default function CalendarBooking({ property, onBookingSuccess }: Calendar
               </div>
               <div className="flex justify-between">
                 <span>Time:</span>
-                <span>{startTime} - {format(addHours(new Date(selectedDate).setHours(parseInt(startTime.split(':')[0])), parseInt(duration)), "HH:mm")}</span>
+                <span>{startTime} - {(() => {
+                  const start = new Date(selectedDate!);
+                  const [hours, minutes] = startTime.split(':').map(Number);
+                  start.setHours(hours, minutes, 0, 0);
+                  let end: Date;
+                  switch (stayType) {
+                    case '4h': end = addHours(start, 4); break;
+                    case '6h': end = addHours(start, 6); break;
+                    case '12h': end = addHours(start, 12); break;
+                    case '24h': end = addDays(start, 1); break;
+                    default: end = addHours(start, 4);
+                  }
+                  return format(end, "HH:mm");
+                })()}</span>
               </div>
               <div className="flex justify-between">
                 <span>Duration:</span>
-                <span>{duration} hour{parseInt(duration) > 1 ? 's' : ''}</span>
+                <span>{stayType === '4h' ? '4 hours' : stayType === '6h' ? '6 hours' : stayType === '12h' ? '12 hours' : '24 hours'}</span>
               </div>
               <div className="flex justify-between">
                 <span>Guests:</span>
@@ -415,7 +495,7 @@ export default function CalendarBooking({ property, onBookingSuccess }: Calendar
             <AlertDialogHeader>
               <AlertDialogTitle>Confirm Booking</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to book {property.title} for {duration} hour{parseInt(duration) > 1 ? 's' : ''} 
+                Are you sure you want to book {property.title} for {stayType === '4h' ? '4 hours' : stayType === '6h' ? '6 hours' : stayType === '12h' ? '12 hours' : '24 hours'} 
                 on {selectedDate && format(selectedDate, "PPP")} at {startTime}?
                 <br /><br />
                 Total cost: Rs. {calculatedPrice?.totalPrice}
