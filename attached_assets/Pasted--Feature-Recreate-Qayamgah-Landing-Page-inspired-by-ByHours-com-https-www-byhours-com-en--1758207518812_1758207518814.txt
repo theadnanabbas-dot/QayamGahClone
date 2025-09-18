@@ -1,0 +1,77 @@
+
+**Feature:** Recreate Qayamgah Landing Page (inspired by [ByHours.com](https://www.byhours.com/en))
+
+> **Goal:**
+> Build a landing page for Qayamgah replicating the overall layout, design style, and flow of [ByHours.com](https://www.byhours.com/en), while applying Qayamgah’s branding and using placeholders for images.
+>
+> ---
+>
+> #### 1️. Base Structure
+>
+> * Start by cloning the basic layout of ByHours’ landing page:
+>
+>   * Sticky header with logo (left) + menu & login/register buttons (right).
+>   * Hero section with headline, sub-text, search bar.
+>   * Sections for: “How it works”, “Benefits”, “Featured Properties”, “FAQ”, “Footer”.
+> * Keep responsiveness (desktop, tablet, mobile).
+>
+> ---
+>
+> #### 2️. Branding & Colors
+>
+> * Primary color: `#CC2B47`
+>
+> * Secondary color: `#AD2D43`
+>
+> * Black font: `#252525`
+>
+> * Gray font: `#8C8C8C`
+>
+> * Use these in buttons, highlights, headings, etc.
+>
+> ---
+>
+> #### 3️. Hero Section
+>
+> * Use the attached hero image (placeholder) as background.
+> * Overlay text:
+>
+>   * Heading: **Choose flexibility**
+>   * Subtext: *First time in Pakistan book for 3, 6, 12 or 24 hours and choose the check-in time you want.*
+> * Search bar with 3 fields:
+>
+>   * Location (dropdown / auto-complete)
+>   * Looking For? (dropdown)
+>   * Date picker
+>   * Red “Search” button → should route to search results page (`/search`).
+>
+> ---
+>
+> #### 4️. Other Sections
+>
+> * “How it works” (3-step icons + captions).
+> * “Why book by the hour” / Benefits (cards).
+> * Featured Properties carousel (use placeholder images).
+> * FAQ accordion.
+> * Footer with social links + legal info.
+>
+> ---
+>
+> #### 5️. Buttons & Links
+>
+> * All CTAs must be functional:
+>
+>   * **Search** → `/search`.
+>   * **Login/Register** → existing login modal.
+>   * Footer/social → use `#` for now.
+>
+> ---
+>
+> #### 6️. Styling & UX
+>
+> * Use smooth scroll + animations (fade/slide).
+> * Keep typography close to ByHours: bold headers, clean sans serif body.
+> * Ensure page loads fast and scales well on mobile. and ux is mobile friendly.
+>
+> ---
+
