@@ -229,6 +229,40 @@ function CalendarContent() {
     }
   });
 
+  // Bulk sync all calendars mutation
+  const bulkSyncMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('POST', '/api/imported-calendars/sync-all');
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/imported-calendars"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/imported-events"] });
+      toast({
+        title: "Bulk Sync Complete",
+        description: data.message || "All calendars synced successfully"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Bulk Sync Error",
+        description: error.message || "Failed to sync calendars",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Auto-sync functionality (every 15 minutes)
+  useEffect(() => {
+    if (!user || importedCalendars.length === 0) return;
+
+    const autoSyncInterval = setInterval(() => {
+      console.log('Auto-syncing imported calendars...');
+      bulkSyncMutation.mutate();
+    }, 15 * 60 * 1000); // 15 minutes
+
+    return () => clearInterval(autoSyncInterval);
+  }, [user, importedCalendars.length, bulkSyncMutation]);
+
   // Filter bookings for the current property owner via room categories
   const myRoomCategories = roomCategories.filter(rc => 
     properties.some(property => property.id === rc.propertyId)
@@ -651,13 +685,30 @@ function CalendarContent() {
       {/* Import Calendars Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <LinkIcon className="h-5 w-5 mr-2" />
-            Import Calendars
-          </CardTitle>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Import external calendar feeds from Booking.com, Airbnb, and other platforms
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center">
+                <LinkIcon className="h-5 w-5 mr-2" />
+                Import Calendars
+              </CardTitle>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Import external calendar feeds from Booking.com, Airbnb, and other platforms
+              </p>
+            </div>
+            {importedCalendars.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => bulkSyncMutation.mutate()}
+                disabled={bulkSyncMutation.isPending}
+                className="ml-4"
+                data-testid="button-refresh-all-calendars"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${bulkSyncMutation.isPending ? 'animate-spin' : ''}`} />
+                {bulkSyncMutation.isPending ? 'Syncing...' : 'Refresh All'}
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Add New Calendar Form */}

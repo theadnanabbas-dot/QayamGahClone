@@ -1773,6 +1773,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sync all imported calendars for authenticated property owner
+  app.post("/api/imported-calendars/sync-all", requirePropertyOwnerAuth, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) {
+        return res.status(401).json({ error: "User authentication failed" });
+      }
+
+      // Get all user's calendars
+      const userCalendars = await storage.getImportedCalendars(userId);
+      if (userCalendars.length === 0) {
+        return res.json({
+          message: "No calendars to sync",
+          results: []
+        });
+      }
+
+      const syncResults = [];
+      let totalEventsImported = 0;
+      let successCount = 0;
+      let errorCount = 0;
+
+      // Sync each calendar
+      for (const calendar of userCalendars) {
+        let calendarResult;
+        
+        try {
+          // Clear existing events for this calendar
+          await storage.deleteImportedEventsByCalendarId(calendar.id);
+
+          // Fetch and parse the ICS feed
+          const importedEvents = await ICSParser.syncCalendar(calendar.sourceUrl, calendar.id);
+          
+          // Save all the parsed events
+          let eventsCount = 0;
+          for (const eventData of importedEvents) {
+            await storage.createImportedEvent(eventData);
+            eventsCount++;
+          }
+          
+          totalEventsImported += eventsCount;
+
+          // Update calendar with successful sync
+          const updatedCalendar = await storage.updateImportedCalendar(calendar.id, {
+            lastSyncAt: new Date(),
+            lastSyncStatus: "success",
+            syncErrorMessage: null
+          });
+
+          calendarResult = {
+            calendarId: calendar.id,
+            calendarName: calendar.name,
+            status: "success",
+            eventsCount,
+            message: `${eventsCount} events imported`
+          };
+          
+          successCount++;
+
+        } catch (syncError: any) {
+          console.error(`Bulk sync error for calendar ${calendar.id}:`, syncError);
+          
+          // Update calendar with error status
+          await storage.updateImportedCalendar(calendar.id, {
+            lastSyncAt: new Date(),
+            lastSyncStatus: "error",
+            syncErrorMessage: syncError.message
+          });
+
+          calendarResult = {
+            calendarId: calendar.id,
+            calendarName: calendar.name,
+            status: "error",
+            eventsCount: 0,
+            message: syncError.message
+          };
+          
+          errorCount++;
+        }
+
+        syncResults.push(calendarResult);
+      }
+
+      res.json({
+        message: `Bulk sync completed. ${successCount} calendars synced successfully, ${errorCount} failed. Total ${totalEventsImported} events imported.`,
+        summary: {
+          totalCalendars: userCalendars.length,
+          successCount,
+          errorCount,
+          totalEventsImported
+        },
+        results: syncResults
+      });
+
+    } catch (error: any) {
+      console.error("Error in bulk calendar sync:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
