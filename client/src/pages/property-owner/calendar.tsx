@@ -285,6 +285,44 @@ function CalendarContent() {
     });
   };
 
+  // Get imported events for a specific date (filtered by user's calendars)
+  const getImportedEventsForDate = (date: Date) => {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    // Only show events from user's own active calendars
+    const userCalendarIds = importedCalendars
+      .filter(cal => cal.userId === user?.id && cal.isActive)
+      .map(cal => cal.id);
+    
+    return importedEvents.filter(event => {
+      const eventStart = new Date(event.startAt);
+      const eventEnd = new Date(event.endAt);
+      // Check if event overlaps with this day AND belongs to user's calendar
+      return eventStart < endOfDay && eventEnd > startOfDay && 
+             userCalendarIds.includes(event.importedCalendarId);
+    });
+  };
+
+  // Combined function to get all events (bookings + imported) for a date
+  const getAllEventsForDate = (date: Date) => {
+    const localBookings = getBookingsForDate(date).map(booking => ({
+      ...booking,
+      type: 'local' as const,
+      source: 'Qayamgah'
+    }));
+    
+    const externalEvents = getImportedEventsForDate(date).map(event => ({
+      ...event,
+      type: 'imported' as const,
+      source: importedCalendars.find(cal => cal.id === event.importedCalendarId)?.name || 'External'
+    }));
+    
+    return [...localBookings, ...externalEvents];
+  };
+
   // Get property name via room category
   const getPropertyName = (roomCategoryId: string) => {
     const roomCategory = roomCategories.find(rc => rc.id === roomCategoryId);
@@ -368,6 +406,18 @@ function CalendarContent() {
       return '24hr stay';
     }
     return `${stayType} ${startTime}-${endTime}`;
+  };
+
+  // Format time for imported events (no stayType)
+  const formatImportedEventTime = (startAt: Date, endAt: Date, isAllDay: boolean) => {
+    if (isAllDay) {
+      return 'All Day';
+    }
+    const start = new Date(startAt);
+    const end = new Date(endAt);
+    const startTime = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const endTime = end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `${startTime}-${endTime}`;
   };
 
   // Import calendar handlers
@@ -780,7 +830,7 @@ function CalendarContent() {
               {/* Calendar Grid */}
               <div className="grid grid-cols-7 gap-2">
                 {calendarDays.map((date, index) => {
-                  const dayBookings = getBookingsForDate(date);
+                  const dayEvents = getAllEventsForDate(date);
                   const isCurrentMonth = date.getMonth() === currentDate.getMonth();
                   const isToday = date.toDateString() === new Date().toDateString();
                   
@@ -801,27 +851,41 @@ function CalendarContent() {
                       </div>
                       
                       <div className="space-y-1">
-                        {dayBookings.slice(0, 2).map(booking => (
+                        {dayEvents.slice(0, 2).map(event => (
                           <div
-                            key={booking.id}
-                            className={`text-xs p-1 rounded border ${getStatusColor(booking.status)}`}
-                            title={`${getPropertyName(booking.roomCategoryId)} - ${getRoomCategoryName(booking.roomCategoryId)} - ${booking.customerName}`}
+                            key={event.id}
+                            className={`text-xs p-1 rounded border ${event.type === 'local' ? getStatusColor(event.status) : 'bg-blue-100 text-blue-800 border-blue-200'}`}
+                            title={event.type === 'local' 
+                              ? `${getPropertyName(event.roomCategoryId)} - ${getRoomCategoryName(event.roomCategoryId)} - ${event.customerName}` 
+                              : `${event.summary} - ${event.source}`
+                            }
                           >
                             <div className="font-medium truncate">
-                              {getPropertyName(booking.roomCategoryId)}
+                              {event.type === 'local' 
+                                ? getPropertyName(event.roomCategoryId)
+                                : event.summary
+                              }
                             </div>
                             <div className="truncate">
-                              {getRoomCategoryName(booking.roomCategoryId)}
+                              {event.type === 'local' 
+                                ? getRoomCategoryName(event.roomCategoryId)
+                                : event.source
+                              }
                             </div>
                             <div className="flex items-center space-x-1">
                               <Clock className="h-3 w-3" />
-                              <span>{formatTimeSlot(booking.startAt, booking.endAt, booking.stayType)}</span>
+                              <span>
+                                {event.type === 'local'
+                                  ? formatTimeSlot(event.startAt, event.endAt, event.stayType)
+                                  : formatImportedEventTime(event.startAt, event.endAt, event.isAllDay)
+                                }
+                              </span>
                             </div>
                           </div>
                         ))}
-                        {dayBookings.length > 2 && (
+                        {dayEvents.length > 2 && (
                           <div className="text-xs text-blue-600 font-medium">
-                            +{dayBookings.length - 2} more
+                            +{dayEvents.length - 2} more
                           </div>
                         )}
                       </div>
