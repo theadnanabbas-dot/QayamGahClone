@@ -124,11 +124,22 @@ export default function CalendarBooking({ property, roomCategories, onBookingSuc
     }
   });
 
-  // Calculate price when date/time/stayType changes
+  // Auto-set start time for 24h bookings
   useEffect(() => {
-    if (selectedDate && startTime && stayType && selectedRoomCategory) {
+    if (stayType === '24h') {
+      setStartTime('14:00'); // Auto-set check-in time for 24h bookings
+    } else if (stayType !== '24h' && startTime === '14:00') {
+      setStartTime('09:00'); // Reset to default for micro-stays
+    }
+  }, [stayType]);
+
+  // Calculate price when date/time/stayType changes (only if date is selected)
+  useEffect(() => {
+    const effectiveStartTime = stayType === '24h' && !startTime ? '14:00' : startTime;
+    
+    if (selectedDate && effectiveStartTime && stayType && selectedRoomCategory) {
       const startDateTime = new Date(selectedDate);
-      const [hours, minutes] = startTime.split(':').map(Number);
+      const [hours, minutes] = effectiveStartTime.split(':').map(Number);
       startDateTime.setHours(hours, minutes, 0, 0);
       
       // Calculate end time based on stay type
@@ -159,6 +170,9 @@ export default function CalendarBooking({ property, roomCategories, onBookingSuc
           endAt: endDateTime
         });
       }
+    } else {
+      // Clear calculated price if date/time not selected
+      setCalculatedPrice(null);
     }
   }, [selectedDate, startTime, stayType, selectedRoomCategory]);
 
@@ -176,6 +190,26 @@ export default function CalendarBooking({ property, roomCategories, onBookingSuc
   const getAvailableTimeSlots = () => {
     if (!selectedDate || !existingBookings) return [];
     
+    // For 24h bookings, use fixed check-in time (hotel style)
+    if (stayType === '24h') {
+      const checkInTime = '14:00'; // Standard hotel check-in time
+      const slotStart = new Date(selectedDate);
+      slotStart.setHours(14, 0, 0, 0);
+      const slotEnd = addDays(slotStart, 1); // 24h later
+      
+      // Check if this conflicts with existing bookings
+      const hasConflict = existingBookings.some(booking => {
+        if (booking.status === 'CANCELLED') return false;
+        const bookingStart = new Date(booking.startAt);
+        const bookingEnd = new Date(booking.endAt);
+        return slotStart < bookingEnd && slotEnd > bookingStart;
+      });
+      
+      const isInFuture = isAfter(slotStart, new Date());
+      return (!hasConflict && isInFuture) ? [checkInTime] : [];
+    }
+    
+    // For micro-stays (4h, 6h, 12h), generate hourly slots
     const timeSlots = [];
     for (let hour = 6; hour <= 23; hour++) {
       const timeString = hour.toString().padStart(2, '0') + ':00';
@@ -194,12 +228,12 @@ export default function CalendarBooking({ property, roomCategories, onBookingSuc
         case '12h':
           slotEnd = addHours(slotStart, 12);
           break;
-        case '24h':
-          slotEnd = addDays(slotStart, 1);
-          break;
         default:
           slotEnd = addHours(slotStart, 4);
       }
+      
+      // Stop if slot would exceed the day (for micro-stays)
+      if (slotEnd.getDate() !== slotStart.getDate()) continue;
       
       // Check if this time slot conflicts with existing bookings
       const hasConflict = existingBookings.some(booking => {
@@ -221,7 +255,10 @@ export default function CalendarBooking({ property, roomCategories, onBookingSuc
   };
 
   const handleBooking = () => {
-    if (!selectedDate || !startTime || !customerInfo.name || !customerInfo.email) {
+    // For 24h bookings, auto-set start time if not selected
+    const effectiveStartTime = stayType === '24h' && !startTime ? '14:00' : startTime;
+    
+    if (!selectedDate || !effectiveStartTime || !customerInfo.name || !customerInfo.email) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -231,7 +268,7 @@ export default function CalendarBooking({ property, roomCategories, onBookingSuc
     }
 
     const startDateTime = new Date(selectedDate);
-    const [hours, minutes] = startTime.split(':').map(Number);
+    const [hours, minutes] = effectiveStartTime.split(':').map(Number);
     startDateTime.setHours(hours, minutes, 0, 0);
     
     let endDateTime: Date;
@@ -281,19 +318,59 @@ export default function CalendarBooking({ property, roomCategories, onBookingSuc
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Room Category Selection */}
+        <div className="space-y-2" data-testid="room-category-selection">
+          <label className="text-sm font-medium">Select Room Category</label>
+          <Select value={selectedRoomCategory} onValueChange={setSelectedRoomCategory} data-testid="room-category-select">
+            <SelectTrigger>
+              <SelectValue placeholder="Choose a room category" />
+            </SelectTrigger>
+            <SelectContent>
+              {roomCategories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name} - Max {category.maxGuestCapacity} guests
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Price Display */}
         <div className="text-center" data-testid="price-display">
-          <div className="text-3xl font-bold text-primary">
-            Rs. {property.pricePerHour}
-          </div>
-          <div className="text-gray-600 dark:text-gray-400">per hour</div>
-          {calculatedPrice && (
+          {(() => {
+            const currentRoom = roomCategories.find(r => r.id === selectedRoomCategory);
+            if (!currentRoom) return null;
+            
+            let price = "0";
+            switch (stayType) {
+              case '4h': price = currentRoom.pricePer4Hours; break;
+              case '6h': price = currentRoom.pricePer6Hours; break;
+              case '12h': price = currentRoom.pricePer12Hours; break;
+              case '24h': price = currentRoom.pricePer24Hours; break;
+            }
+            
+            return (
+              <>
+                <div className="text-3xl font-bold text-primary">
+                  Rs. {parseFloat(price).toLocaleString()}
+                </div>
+                <div className="text-gray-600 dark:text-gray-400">
+                  for {stayType === '4h' ? '4 hours' : stayType === '6h' ? '6 hours' : stayType === '12h' ? '12 hours' : '24 hours'}
+                </div>
+                <div className="text-sm text-gray-500 mt-1">
+                  {currentRoom.name} • Max {currentRoom.maxGuestCapacity} guests
+                </div>
+              </>
+            );
+          })()}
+          
+          {calculatedPrice && selectedDate && (
             <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
               <div className="text-lg font-semibold text-green-700 dark:text-green-400">
                 Total: Rs. {calculatedPrice.totalPrice}
               </div>
               <div className="text-sm text-green-600 dark:text-green-500">
-                for {calculatedPrice.hours} hours
+                for {stayType === '4h' ? '4 hours' : stayType === '6h' ? '6 hours' : stayType === '12h' ? '12 hours' : '24 hours'}
               </div>
             </div>
           )}
@@ -469,9 +546,8 @@ export default function CalendarBooking({ property, roomCategories, onBookingSuc
           onClick={() => setShowBookingDialog(true)}
           disabled={
             !selectedDate || 
-            !startTime || 
-            !calculatedPrice || 
-            availableTimeSlots.length === 0 ||
+            (stayType !== '24h' && !startTime) ||
+            (stayType !== '24h' && availableTimeSlots.length === 0) ||
             createBookingMutation.isPending
           }
           data-testid="button-book-now"

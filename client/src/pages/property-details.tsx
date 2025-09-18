@@ -277,6 +277,112 @@ export default function PropertyDetails() {
               </div>
             </div>
 
+            {/* Room Categories */}
+            {roomCategories && roomCategories.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 mb-8" data-testid="section-room-categories">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                  Room Categories & Pricing
+                </h2>
+                <div className="space-y-4">
+                  {roomCategories.map((category) => (
+                    <Card key={category.id} className="border border-gray-200 dark:border-gray-700" data-testid={`card-room-category-${category.id}`}>
+                      <CardContent className="p-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                          {/* Room Details */}
+                          <div className="lg:col-span-2">
+                            <div className="flex items-start space-x-4">
+                              <img
+                                src={category.image || "/api/images/placeholder-room.jpg"}
+                                alt={category.name}
+                                className="w-24 h-24 object-cover rounded-lg"
+                                data-testid={`img-room-category-${category.id}`}
+                              />
+                              <div>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2" data-testid={`text-room-name-${category.id}`}>
+                                  {category.name}
+                                </h3>
+                                <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                                  <div className="flex items-center space-x-2">
+                                    <Users className="h-4 w-4" />
+                                    <span data-testid={`text-room-capacity-${category.id}`}>
+                                      Max {category.maxGuestCapacity} guests
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Bed className="h-4 w-4" />
+                                    <span data-testid={`text-room-beds-${category.id}`}>
+                                      {category.beds} bed{category.beds !== 1 ? 's' : ''}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Bath className="h-4 w-4" />
+                                    <span data-testid={`text-room-bathrooms-${category.id}`}>
+                                      {category.bathrooms} bathroom{category.bathrooms !== 1 ? 's' : ''}
+                                    </span>
+                                  </div>
+                                  {category.areaSqFt && (
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-xs">📐</span>
+                                      <span data-testid={`text-room-area-${category.id}`}>
+                                        {category.areaSqFt} sq ft
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Pricing Options */}
+                          <div className="lg:col-span-1">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                              Duration Pricing
+                            </h4>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between" data-testid={`pricing-4h-${category.id}`}>
+                                <span className="text-gray-600 dark:text-gray-400">4 hours:</span>
+                                <span className="font-semibold text-primary">PKR {parseFloat(category.pricePer4Hours).toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between" data-testid={`pricing-6h-${category.id}`}>
+                                <span className="text-gray-600 dark:text-gray-400">6 hours:</span>
+                                <span className="font-semibold text-primary">PKR {parseFloat(category.pricePer6Hours).toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between" data-testid={`pricing-12h-${category.id}`}>
+                                <span className="text-gray-600 dark:text-gray-400">12 hours:</span>
+                                <span className="font-semibold text-primary">PKR {parseFloat(category.pricePer12Hours).toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between" data-testid={`pricing-24h-${category.id}`}>
+                                <span className="text-gray-600 dark:text-gray-400">24 hours:</span>
+                                <span className="font-semibold text-primary">PKR {parseFloat(category.pricePer24Hours).toLocaleString()}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Book Now Button */}
+                          <div className="lg:col-span-1 flex items-center justify-center">
+                            <Button 
+                              className="w-full"
+                              onClick={() => {
+                                // Scroll to booking section
+                                const bookingSection = document.querySelector('[data-testid="section-booking"]');
+                                if (bookingSection) {
+                                  bookingSection.scrollIntoView({ behavior: 'smooth' });
+                                }
+                                // Could also pre-select this room category in the booking component
+                              }}
+                              data-testid={`button-book-now-${category.id}`}
+                            >
+                              Book Now
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Location */}
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6" data-testid="section-location">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
@@ -305,7 +411,7 @@ export default function PropertyDetails() {
           </div>
 
           {/* Booking Sidebar */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1" data-testid="section-booking">
             {roomCategories && roomCategories.length > 0 ? (
               <CalendarBooking 
                 property={{

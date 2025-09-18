@@ -1,0 +1,71 @@
+Prompt for Replit
+
+Task:
+In the Qayamgah project, create one dummy property listing (for testing) with multiple room categories, and ensure the booking process is functional.
+Use the design of this reference single-listing page as inspiration (not copy): https://www.brevistay.com/hotels/opo-horizon-stanley-in-delhi-8831
+
+Details to implement:
+
+Property Data (dummy):
+
+Name: “Sunrise Residency – Gulshan”
+
+Type: Hotel
+
+Address: Gulshan-e-Iqbal, Karachi
+
+Phone: +92 300 1234567
+
+Summary: “A modern boutique stay in the heart of Karachi with flexible booking options.”
+
+Amenities (example): Free WiFi, Air Conditioning, Parking, 24/7 Reception, Room Service.
+
+Images: Use 2–3 placeholder hotel images.
+
+Room Categories (3 examples):
+
+Standard Room: max 2 guests, 1 bathroom, 1 queen bed, 220 sq ft, images (placeholder), prices → 4h: PKR 1,200 | 6h: PKR 1,800 | 12h: PKR 2,800 | 24h: PKR 4,000
+
+Deluxe Room: max 3 guests, 1 bathroom, 1 king bed, 320 sq ft, prices → 4h: PKR 1,800 | 6h: PKR 2,500 | 12h: PKR 3,600 | 24h: PKR 5,200
+
+Suite: max 4 guests, 2 bathrooms, 1 king + sofa bed, 500 sq ft, prices → 4h: PKR 3,000 | 6h: PKR 4,200 | 12h: PKR 6,000 | 24h: PKR 8,000
+
+Booking Procedure:
+
+On the single-property page, show:
+
+Gallery (images).
+
+Property summary + amenities.
+
+Table/list of room categories with:
+
+Name, image, capacity, area, price options (4h, 6h, 12h, 24h).
+
+“Book Now” button beside each.
+
+When user clicks Book Now:
+
+For 4h/6h/12h → show same-day calendar (micro-stay).
+
+For 24h → allow selecting a date range (min 2 nights, max 15).
+
+Show price calculation based on selected stay type & nights.
+
+Confirm booking → Save in bookings table/collection with status = “Pending”.
+
+Integration Points:
+
+Insert this property into the properties table (or JSON if using mock DB).
+
+Make sure it appears in Vendor Dashboard → All Properties and in the public catalog.
+
+Booking flow should store data in the bookings folder/collection created earlier.
+
+Output:
+
+Update the frontend to display this listing beautifully.
+
+Ensure room categories are shown clearly, with images, facilities, and prices.
+
+Verify that a booking record is created after confirmation.

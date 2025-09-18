@@ -135,6 +135,77 @@ export async function loadSampleData() {
   const properties = [];
   
   // Featured Properties (Premium Hotels & Apartments)
+  
+  // Sunrise Residency – Gulshan (Complete Test Property)
+  const sunriseResidency = await storage.createProperty({
+    title: "Sunrise Residency – Gulshan",
+    slug: "sunrise-residency-gulshan",
+    description: "A modern boutique stay in the heart of Karachi with flexible booking options.",
+    maxGuests: 4,
+    address: "Gulshan-e-Iqbal, Karachi",
+    latitude: 24.9265,
+    longitude: 67.0822,
+    cityId: karachi.id,
+    categoryId: hotels.id,
+    ownerId: owner1.id,
+    bedrooms: 1,
+    bathrooms: 1,
+    amenities: ["Free WiFi", "Air Conditioning", "Parking", "24/7 Reception", "Room Service"],
+    images: [
+      "/api/images/properties/sunrise-residency-1.jpg",
+      "/api/images/properties/sunrise-residency-2.jpg",
+      "/api/images/properties/sunrise-residency-3.jpg"
+    ],
+    phoneNumber: "+92 300 1234567",
+    isFeature: true,
+    isActive: true,
+    rating: "4.5"
+  });
+  properties.push(sunriseResidency);
+
+  // Create room categories for Sunrise Residency
+  await storage.createRoomCategory({
+    propertyId: sunriseResidency.id,
+    name: "Standard Room",
+    image: "/api/images/properties/sunrise-standard.jpg",
+    maxGuestCapacity: 2,
+    bathrooms: 1,
+    beds: 1, // 1 queen bed
+    areaSqFt: 220,
+    pricePer4Hours: "1200.00",
+    pricePer6Hours: "1800.00",
+    pricePer12Hours: "2800.00",
+    pricePer24Hours: "4000.00"
+  });
+
+  await storage.createRoomCategory({
+    propertyId: sunriseResidency.id,
+    name: "Deluxe Room",
+    image: "/api/images/properties/sunrise-deluxe.jpg",
+    maxGuestCapacity: 3,
+    bathrooms: 1,
+    beds: 1, // 1 king bed
+    areaSqFt: 320,
+    pricePer4Hours: "1800.00",
+    pricePer6Hours: "2500.00",
+    pricePer12Hours: "3600.00",
+    pricePer24Hours: "5200.00"
+  });
+
+  await storage.createRoomCategory({
+    propertyId: sunriseResidency.id,
+    name: "Suite",
+    image: "/api/images/properties/sunrise-suite.jpg",
+    maxGuestCapacity: 4,
+    bathrooms: 2,
+    beds: 2, // 1 king + sofa bed
+    areaSqFt: 500,
+    pricePer4Hours: "3000.00",
+    pricePer6Hours: "4200.00",
+    pricePer12Hours: "6000.00",
+    pricePer24Hours: "8000.00"
+  });
+
   const pearlContinental = await storage.createProperty({
     title: "Pearl Continental Karachi",
     slug: "pearl-continental-karachi",
