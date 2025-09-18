@@ -16,6 +16,9 @@ import {
   insertVendorSchema,
   updateVendorStatusSchema,
   updateVendorSchema,
+  insertImportedCalendarSchema,
+  updateImportedCalendarSchema,
+  insertImportedEventSchema,
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1550,6 +1553,188 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error generating ICS file:", error);
       res.status(500).json({ error: "Failed to generate calendar file" });
+    }
+  });
+
+  // Imported Calendar Routes
+  
+  // Get imported calendars for authenticated property owner
+  app.get("/api/imported-calendars", requirePropertyOwnerAuth, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) {
+        return res.status(401).json({ error: "User authentication failed" });
+      }
+
+      const calendars = await storage.getImportedCalendars(userId);
+      res.json(calendars);
+    } catch (error: any) {
+      console.error("Error fetching imported calendars:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Create new imported calendar
+  app.post("/api/imported-calendars", requirePropertyOwnerAuth, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) {
+        return res.status(401).json({ error: "User authentication failed" });
+      }
+
+      const calendarData = insertImportedCalendarSchema.parse({
+        ...req.body,
+        userId
+      });
+
+      const calendar = await storage.createImportedCalendar(calendarData);
+      res.status(201).json({
+        message: "Calendar imported successfully",
+        calendar
+      });
+    } catch (error: any) {
+      console.error("Error creating imported calendar:", error);
+      res.status(400).json({ error: error.message || "Invalid calendar data" });
+    }
+  });
+
+  // Update imported calendar
+  app.patch("/api/imported-calendars/:id", requirePropertyOwnerAuth, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) {
+        return res.status(401).json({ error: "User authentication failed" });
+      }
+
+      const calendarId = req.params.id;
+      
+      // Check if the calendar belongs to the authenticated user
+      const existingCalendar = await storage.getImportedCalendar(calendarId);
+      if (!existingCalendar) {
+        return res.status(404).json({ error: "Calendar not found" });
+      }
+      
+      if (existingCalendar.userId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const updates = updateImportedCalendarSchema.parse(req.body);
+      const calendar = await storage.updateImportedCalendar(calendarId, updates);
+      
+      if (!calendar) {
+        return res.status(404).json({ error: "Calendar not found" });
+      }
+      
+      res.json({
+        message: "Calendar updated successfully",
+        calendar
+      });
+    } catch (error: any) {
+      console.error("Error updating imported calendar:", error);
+      res.status(400).json({ error: error.message || "Invalid update data" });
+    }
+  });
+
+  // Delete imported calendar
+  app.delete("/api/imported-calendars/:id", requirePropertyOwnerAuth, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) {
+        return res.status(401).json({ error: "User authentication failed" });
+      }
+
+      const calendarId = req.params.id;
+      
+      // Check if the calendar belongs to the authenticated user
+      const existingCalendar = await storage.getImportedCalendar(calendarId);
+      if (!existingCalendar) {
+        return res.status(404).json({ error: "Calendar not found" });
+      }
+      
+      if (existingCalendar.userId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const deleted = await storage.deleteImportedCalendar(calendarId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Calendar not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting imported calendar:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get imported events for authenticated property owner
+  app.get("/api/imported-events", requirePropertyOwnerAuth, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) {
+        return res.status(401).json({ error: "User authentication failed" });
+      }
+
+      const { startAt, endAt } = req.query;
+      
+      let events;
+      if (startAt && endAt) {
+        // Get events for date range
+        events = await storage.getImportedEventsForDateRange(
+          new Date(startAt as string),
+          new Date(endAt as string),
+          userId
+        );
+      } else {
+        // Get all events for user's calendars
+        const userCalendars = await storage.getImportedCalendars(userId);
+        const allEvents = await Promise.all(
+          userCalendars.map(calendar => storage.getImportedEvents(calendar.id))
+        );
+        events = allEvents.flat();
+      }
+      
+      res.json(events);
+    } catch (error: any) {
+      console.error("Error fetching imported events:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Refresh/sync imported calendar - fetch and parse ICS
+  app.post("/api/imported-calendars/:id/sync", requirePropertyOwnerAuth, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) {
+        return res.status(401).json({ error: "User authentication failed" });
+      }
+
+      const calendarId = req.params.id;
+      
+      // Check if the calendar belongs to the authenticated user
+      const calendar = await storage.getImportedCalendar(calendarId);
+      if (!calendar) {
+        return res.status(404).json({ error: "Calendar not found" });
+      }
+      
+      if (calendar.userId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // For now, just update the sync status - ICS parsing will be implemented in next task
+      const updatedCalendar = await storage.updateImportedCalendar(calendarId, {
+        lastSyncAt: new Date(),
+        lastSyncStatus: "success",
+        syncErrorMessage: null
+      });
+
+      res.json({
+        message: "Calendar sync initiated successfully",
+        calendar: updatedCalendar
+      });
+    } catch (error: any) {
+      console.error("Error syncing calendar:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 

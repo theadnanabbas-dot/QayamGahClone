@@ -17,7 +17,11 @@ import {
   type Booking,
   type InsertBooking,
   type Vendor,
-  type InsertVendor
+  type InsertVendor,
+  type ImportedCalendar,
+  type InsertImportedCalendar,
+  type ImportedEvent,
+  type InsertImportedEvent
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -104,6 +108,22 @@ export interface IStorage {
   updateVendor(id: string, updates: Partial<InsertVendor>): Promise<Vendor | undefined>;
   updateVendorStatus(id: string, status: string): Promise<Vendor | undefined>;
   deleteVendor(id: string): Promise<boolean>;
+  
+  // Imported Calendars
+  getImportedCalendars(userId?: string): Promise<ImportedCalendar[]>;
+  getImportedCalendar(id: string): Promise<ImportedCalendar | undefined>;
+  createImportedCalendar(calendar: InsertImportedCalendar): Promise<ImportedCalendar>;
+  updateImportedCalendar(id: string, updates: Partial<InsertImportedCalendar>): Promise<ImportedCalendar | undefined>;
+  deleteImportedCalendar(id: string): Promise<boolean>;
+  
+  // Imported Events
+  getImportedEvents(calendarId?: string): Promise<ImportedEvent[]>;
+  getImportedEvent(id: string): Promise<ImportedEvent | undefined>;
+  createImportedEvent(event: InsertImportedEvent): Promise<ImportedEvent>;
+  updateImportedEvent(id: string, updates: Partial<InsertImportedEvent>): Promise<ImportedEvent | undefined>;
+  deleteImportedEvent(id: string): Promise<boolean>;
+  deleteImportedEventsByCalendarId(calendarId: string): Promise<boolean>;
+  getImportedEventsForDateRange(startAt: Date, endAt: Date, userId?: string): Promise<ImportedEvent[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -116,6 +136,8 @@ export class MemStorage implements IStorage {
   private testimonials: Map<string, Testimonial>;
   private bookings: Map<string, Booking>;
   private vendors: Map<string, Vendor>;
+  private importedCalendars: Map<string, ImportedCalendar>;
+  private importedEvents: Map<string, ImportedEvent>;
 
   constructor() {
     this.users = new Map();
@@ -127,6 +149,8 @@ export class MemStorage implements IStorage {
     this.testimonials = new Map();
     this.bookings = new Map();
     this.vendors = new Map();
+    this.importedCalendars = new Map();
+    this.importedEvents = new Map();
   }
 
   // Users
@@ -871,6 +895,134 @@ export class MemStorage implements IStorage {
     }
     
     return allDeleted;
+  }
+
+  // Imported Calendars
+  async getImportedCalendars(userId?: string): Promise<ImportedCalendar[]> {
+    let calendars = Array.from(this.importedCalendars.values());
+    
+    if (userId) {
+      calendars = calendars.filter(calendar => calendar.userId === userId);
+    }
+    
+    return calendars.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+
+  async getImportedCalendar(id: string): Promise<ImportedCalendar | undefined> {
+    return this.importedCalendars.get(id);
+  }
+
+  async createImportedCalendar(insertCalendar: InsertImportedCalendar): Promise<ImportedCalendar> {
+    const id = randomUUID();
+    const calendar: ImportedCalendar = {
+      ...insertCalendar,
+      id,
+      createdAt: new Date(),
+      lastSyncAt: null,
+      syncErrorMessage: null
+    };
+    this.importedCalendars.set(id, calendar);
+    return calendar;
+  }
+
+  async updateImportedCalendar(id: string, updates: Partial<InsertImportedCalendar>): Promise<ImportedCalendar | undefined> {
+    const calendar = this.importedCalendars.get(id);
+    if (!calendar) return undefined;
+    
+    const updatedCalendar = { ...calendar, ...updates };
+    this.importedCalendars.set(id, updatedCalendar);
+    return updatedCalendar;
+  }
+
+  async deleteImportedCalendar(id: string): Promise<boolean> {
+    // Also delete all events for this calendar
+    await this.deleteImportedEventsByCalendarId(id);
+    return this.importedCalendars.delete(id);
+  }
+
+  // Imported Events
+  async getImportedEvents(calendarId?: string): Promise<ImportedEvent[]> {
+    let events = Array.from(this.importedEvents.values());
+    
+    if (calendarId) {
+      events = events.filter(event => event.importedCalendarId === calendarId);
+    }
+    
+    return events.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+  }
+
+  async getImportedEvent(id: string): Promise<ImportedEvent | undefined> {
+    return this.importedEvents.get(id);
+  }
+
+  async createImportedEvent(insertEvent: InsertImportedEvent): Promise<ImportedEvent> {
+    const id = randomUUID();
+    const event: ImportedEvent = {
+      ...insertEvent,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      externalId: insertEvent.externalId ?? null,
+      description: insertEvent.description ?? null,
+      location: insertEvent.location ?? null,
+      organizer: insertEvent.organizer ?? null,
+      status: insertEvent.status ?? "confirmed"
+    };
+    this.importedEvents.set(id, event);
+    return event;
+  }
+
+  async updateImportedEvent(id: string, updates: Partial<InsertImportedEvent>): Promise<ImportedEvent | undefined> {
+    const event = this.importedEvents.get(id);
+    if (!event) return undefined;
+    
+    const updatedEvent = { 
+      ...event, 
+      ...updates, 
+      updatedAt: new Date()
+    };
+    this.importedEvents.set(id, updatedEvent);
+    return updatedEvent;
+  }
+
+  async deleteImportedEvent(id: string): Promise<boolean> {
+    return this.importedEvents.delete(id);
+  }
+
+  async deleteImportedEventsByCalendarId(calendarId: string): Promise<boolean> {
+    const eventsToDelete = Array.from(this.importedEvents.values())
+      .filter(event => event.importedCalendarId === calendarId);
+    
+    let allDeleted = true;
+    for (const event of eventsToDelete) {
+      if (!this.importedEvents.delete(event.id)) {
+        allDeleted = false;
+      }
+    }
+    
+    return allDeleted;
+  }
+
+  async getImportedEventsForDateRange(startAt: Date, endAt: Date, userId?: string): Promise<ImportedEvent[]> {
+    let events = Array.from(this.importedEvents.values());
+    
+    // Filter by date range (events that overlap with the requested range)
+    events = events.filter(event => {
+      const eventStart = new Date(event.startAt);
+      const eventEnd = new Date(event.endAt);
+      return eventStart < endAt && eventEnd > startAt;
+    });
+    
+    // Filter by user if specified
+    if (userId) {
+      const userCalendars = Array.from(this.importedCalendars.values())
+        .filter(calendar => calendar.userId === userId)
+        .map(calendar => calendar.id);
+      
+      events = events.filter(event => userCalendars.includes(event.importedCalendarId));
+    }
+    
+    return events.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   }
 }
 
