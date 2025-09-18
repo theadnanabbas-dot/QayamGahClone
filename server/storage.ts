@@ -134,7 +134,8 @@ export class MemStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
+    // Use provided ID if available, otherwise generate a new UUID
+    const id = (insertUser as any).id || randomUUID();
     // Hash the password (in a real app, use bcrypt)
     const passwordHash = `hashed_${insertUser.password}`;
     const user: User = { 

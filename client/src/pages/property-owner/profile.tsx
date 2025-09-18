@@ -51,30 +51,28 @@ function ProfileContent() {
   const user = userString ? JSON.parse(userString) : null;
   const userId = user?.id;
 
-  const { data: vendors = [] } = useQuery<Vendor[]>({
-    queryKey: ["/api/vendors"]
+  const { data: vendor } = useQuery<Vendor>({
+    queryKey: ["/api/property-owner/vendor"],
+    enabled: !!userId, // Only run query if userId exists
   });
 
-  // Find current user's vendor profile
+  // Load vendor profile data
   useEffect(() => {
-    if (userId && vendors.length > 0) {
-      const currentVendor = vendors.find(v => v.userId === userId);
-      if (currentVendor) {
-        setVendorData(currentVendor);
-        setFormData({
-          firstName: currentVendor.firstName || "",
-          lastName: currentVendor.lastName || "",
-          email: user?.email || "",
-          phoneNo1: currentVendor.phoneNo1 || "",
-          phoneNo2: currentVendor.phoneNo2 || "",
-          cnic: currentVendor.cnic || "",
-          address: currentVendor.address || "",
-          city: currentVendor.city || "",
-          country: currentVendor.country || "",
-        });
-      }
+    if (vendor) {
+      setVendorData(vendor);
+      setFormData({
+        firstName: vendor.firstName || "",
+        lastName: vendor.lastName || "",
+        email: user?.email || "",
+        phoneNo1: vendor.phoneNo1 || "",
+        phoneNo2: vendor.phoneNo2 || "",
+        cnic: vendor.cnic || "",
+        address: vendor.address || "",
+        city: vendor.city || "",
+        country: vendor.country || "",
+      });
     }
-  }, [userId, vendors, user]);
+  }, [vendor, user]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({

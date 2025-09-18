@@ -443,6 +443,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
 
+  const requirePropertyOwnerAuth = (req: any, res: any, next: any) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    const token = authHeader.substring(7);
+    // In a real app, verify JWT token here. For demo, check token format
+    if (!token.startsWith('owner_')) {
+      return res.status(403).json({ error: "Property owner access required" });
+    }
+    
+    next();
+  };
+
   // Vendor routes - Protected with admin authentication
   app.get("/api/vendors", requireAdminAuth, async (req, res) => {
     try {
@@ -489,6 +504,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Property owner vendor profile endpoint
+  app.get("/api/property-owner/vendor", requirePropertyOwnerAuth, async (req, res) => {
+    try {
+      // For demo purposes, always return the demo owner's vendor profile
+      // In a real app, you would decode the JWT token to get the actual user ID
+      const demoUserId = 'owner-001';
+
+      const vendor = await storage.getVendorByUserId(demoUserId);
+      if (!vendor) {
+        return res.status(404).json({ error: "Vendor profile not found" });
+      }
+
+      res.json(vendor);
+    } catch (error: any) {
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 

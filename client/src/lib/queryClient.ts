@@ -19,6 +19,12 @@ export async function apiRequest(
   if (adminToken) {
     headers.Authorization = `Bearer ${adminToken}`;
   }
+  
+  // Add authorization header if property owner token exists
+  const propertyOwnerToken = localStorage.getItem("property_owner_token");
+  if (propertyOwnerToken) {
+    headers.Authorization = `Bearer ${propertyOwnerToken}`;
+  }
 
   const res = await fetch(url, {
     method,
@@ -43,6 +49,12 @@ export const getQueryFn: <T>(options: {
     const adminToken = localStorage.getItem("admin_token");
     if (adminToken) {
       headers.Authorization = `Bearer ${adminToken}`;
+    }
+    
+    // Add authorization header if property owner token exists
+    const propertyOwnerToken = localStorage.getItem("property_owner_token");
+    if (propertyOwnerToken) {
+      headers.Authorization = `Bearer ${propertyOwnerToken}`;
     }
 
     const res = await fetch(queryKey.join("/") as string, {
