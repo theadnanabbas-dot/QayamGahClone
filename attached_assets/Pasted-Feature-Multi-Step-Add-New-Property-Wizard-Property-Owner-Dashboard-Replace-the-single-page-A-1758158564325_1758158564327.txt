@@ -1,0 +1,129 @@
+Feature: Multi-Step “Add New Property” Wizard (Property Owner Dashboard)
+
+Replace the single-page “Add Property” form with a 4-step modal wizard.
+
+1️⃣ Entry Point
+
+Inside the Property Owner Dashboard → Add New Property tab, show a large centered button: “Add Property”.
+
+When clicked, open a full-screen (or large) modal with the new multi-step form.
+
+2️⃣ Wizard Structure
+
+Use 4 slides / steps inside the modal.
+
+Add a progress indicator or stepper at the top (Step 1 of 4, etc.).
+
+Include Back, Next, and Cancel buttons at the bottom of each step.
+
+Step 1: Property Type
+
+Heading: “What kind of property?”
+
+Single-choice buttons:
+
+Commercial / Hotels
+
+Private / BnB’s
+
+Required before moving forward.
+
+Step 2: Property is Similar To…
+
+Heading: “Property is similar to…”
+
+Single-choice buttons:
+
+Hotel
+
+Apartment
+
+Guest House
+
+Motel
+
+House
+
+Required before moving forward.
+
+Step 3: Property Details
+
+Heading: “Provide your property details”
+
+Form fields:
+
+Property Name *
+
+Property Phone No. *
+
+Property Address *
+
+Room Categories (dropdown: choose 1–10) *
+
+Embedded Google Map for location (placeholder now) *
+
+Amenities (checkbox list: Wi-Fi, Parking, Breakfast, AC, etc.)
+
+Property Summary (textarea)
+
+Photo Upload for premises / exterior (multiple images).
+
+Validate required fields before Next.
+
+Step 4: Room Categories Details
+
+Heading: “Tell us about your room categories”
+
+For the number chosen in Step 3, generate that many mini-forms, one after another (or dynamically add new blocks):
+
+Room Category Name *
+
+Room Image Upload *
+
+Maximum Guest Capacity *
+
+Bathrooms *
+
+Beds *
+
+Area (sq ft)
+
+Pricing:
+
+Price per Hour
+
+Price per 6 Hours
+
+Price per 12 Hours
+
+Price per 24 Hours
+
+Each block has Save (for that room) & “Add Another” (if user wants to change order).
+
+When all room details are filled, show a Finish / Submit button.
+
+3️⃣ Completion
+
+After clicking Finish:
+
+Validate all data.
+
+Save property + room details into the owner’s property list.
+
+Show confirmation toast: “Property added successfully.”
+
+Close modal & refresh “All Properties” table.
+
+4️⃣ UX & Styling
+
+Modal should be large, centered, and responsive (full-screen on mobile).
+
+Use TailwindCSS for:
+
+Buttons (primary for Next/Finish, neutral for Back/Cancel).
+
+Card-style sections.
+
+Stepper progress bar.
+
+Show inline validation messages for required fields.

@@ -8,6 +8,8 @@ import {
   type InsertPropertyCategory,
   type Property,
   type InsertProperty,
+  type RoomCategory,
+  type InsertRoomCategory,
   type Blog,
   type InsertBlog,
   type Testimonial,
@@ -57,6 +59,14 @@ export interface IStorage {
   updateProperty(id: string, updates: Partial<InsertProperty>): Promise<Property | undefined>;
   deleteProperty(id: string): Promise<boolean>;
   
+  // Room Categories
+  getRoomCategories(propertyId?: string): Promise<RoomCategory[]>;
+  getRoomCategory(id: string): Promise<RoomCategory | undefined>;
+  createRoomCategory(roomCategory: InsertRoomCategory): Promise<RoomCategory>;
+  updateRoomCategory(id: string, updates: Partial<InsertRoomCategory>): Promise<RoomCategory | undefined>;
+  deleteRoomCategory(id: string): Promise<boolean>;
+  deleteRoomCategoriesByPropertyId(propertyId: string): Promise<boolean>;
+  
   // Blogs
   getBlogs(limit?: number): Promise<Blog[]>;
   getBlog(id: string): Promise<Blog | undefined>;
@@ -100,6 +110,7 @@ export class MemStorage implements IStorage {
   private cities: Map<string, City>;
   private propertyCategories: Map<string, PropertyCategory>;
   private properties: Map<string, Property>;
+  private roomCategories: Map<string, RoomCategory>;
   private blogs: Map<string, Blog>;
   private testimonials: Map<string, Testimonial>;
   private bookings: Map<string, Booking>;
@@ -110,6 +121,7 @@ export class MemStorage implements IStorage {
     this.cities = new Map();
     this.propertyCategories = new Map();
     this.properties = new Map();
+    this.roomCategories = new Map();
     this.blogs = new Map();
     this.testimonials = new Map();
     this.bookings = new Map();
@@ -258,6 +270,9 @@ export class MemStorage implements IStorage {
       id, 
       createdAt: new Date(),
       description: insertProperty.description ?? null,
+      propertyType: insertProperty.propertyType ?? "private",
+      phoneNumber: insertProperty.phoneNumber ?? null,
+      roomCategoriesCount: insertProperty.roomCategoriesCount ?? 1,
       pricePerDay: insertProperty.pricePerDay ?? null,
       latitude: insertProperty.latitude ?? null,
       longitude: insertProperty.longitude ?? null,
@@ -682,6 +697,60 @@ export class MemStorage implements IStorage {
 
   async deleteVendor(id: string): Promise<boolean> {
     return this.vendors.delete(id);
+  }
+
+  // Room Categories
+  async getRoomCategories(propertyId?: string): Promise<RoomCategory[]> {
+    let roomCategories = Array.from(this.roomCategories.values());
+    
+    if (propertyId) {
+      roomCategories = roomCategories.filter(room => room.propertyId === propertyId);
+    }
+    
+    return roomCategories.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+
+  async getRoomCategory(id: string): Promise<RoomCategory | undefined> {
+    return this.roomCategories.get(id);
+  }
+
+  async createRoomCategory(insertRoomCategory: InsertRoomCategory): Promise<RoomCategory> {
+    const id = randomUUID();
+    const roomCategory: RoomCategory = { 
+      ...insertRoomCategory, 
+      id, 
+      createdAt: new Date(),
+      areaSqFt: insertRoomCategory.areaSqFt ?? null
+    };
+    this.roomCategories.set(id, roomCategory);
+    return roomCategory;
+  }
+
+  async updateRoomCategory(id: string, updates: Partial<InsertRoomCategory>): Promise<RoomCategory | undefined> {
+    const roomCategory = this.roomCategories.get(id);
+    if (!roomCategory) return undefined;
+    
+    const updatedRoomCategory = { ...roomCategory, ...updates };
+    this.roomCategories.set(id, updatedRoomCategory);
+    return updatedRoomCategory;
+  }
+
+  async deleteRoomCategory(id: string): Promise<boolean> {
+    return this.roomCategories.delete(id);
+  }
+
+  async deleteRoomCategoriesByPropertyId(propertyId: string): Promise<boolean> {
+    const roomCategoriesToDelete = Array.from(this.roomCategories.values())
+      .filter(room => room.propertyId === propertyId);
+    
+    let allDeleted = true;
+    for (const room of roomCategoriesToDelete) {
+      if (!this.roomCategories.delete(room.id)) {
+        allDeleted = false;
+      }
+    }
+    
+    return allDeleted;
   }
 }
 

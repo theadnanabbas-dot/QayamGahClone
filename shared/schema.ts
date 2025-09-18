@@ -38,11 +38,14 @@ export const properties = pgTable("properties", {
   title: text("title").notNull(),
   slug: text("slug").notNull().unique(),
   description: text("description"),
+  propertyType: text("property_type").notNull().default("private"), // "commercial" or "private"
   pricePerHour: decimal("price_per_hour", { precision: 10, scale: 2 }).notNull(),
   pricePerDay: decimal("price_per_day", { precision: 10, scale: 2 }),
   minHours: integer("min_hours").notNull().default(1),
   maxGuests: integer("max_guests").notNull().default(1),
   address: text("address").notNull(),
+  phoneNumber: text("phone_number"), // Property phone number
+  roomCategoriesCount: integer("room_categories_count").notNull().default(1),
   latitude: decimal("latitude", { precision: 10, scale: 7 }),
   longitude: decimal("longitude", { precision: 10, scale: 7 }),
   cityId: varchar("city_id").references(() => cities.id),
@@ -56,6 +59,22 @@ export const properties = pgTable("properties", {
   isFeature: boolean("is_featured").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
   rating: decimal("rating", { precision: 3, scale: 2 }).notNull().default('0.00'),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const roomCategories = pgTable("room_categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  propertyId: varchar("property_id").notNull().references(() => properties.id),
+  name: text("name").notNull(),
+  image: text("image").notNull(),
+  maxGuestCapacity: integer("max_guest_capacity").notNull(),
+  bathrooms: integer("bathrooms").notNull(),
+  beds: integer("beds").notNull(),
+  areaSqFt: integer("area_sq_ft"), // Optional area in square feet
+  pricePer4Hours: decimal("price_per_4_hours", { precision: 10, scale: 2 }).notNull(),
+  pricePer6Hours: decimal("price_per_6_hours", { precision: 10, scale: 2 }).notNull(),
+  pricePer12Hours: decimal("price_per_12_hours", { precision: 10, scale: 2 }).notNull(),
+  pricePer24Hours: decimal("price_per_24_hours", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -143,6 +162,13 @@ export const insertPropertyCategorySchema = createInsertSchema(propertyCategorie
 export const insertPropertySchema = createInsertSchema(properties).omit({
   id: true,
   createdAt: true,
+}).extend({
+  propertyType: z.enum(["commercial", "private"]).default("private"),
+});
+
+export const insertRoomCategorySchema = createInsertSchema(roomCategories).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertBlogSchema = createInsertSchema(blogs).omit({
@@ -205,6 +231,9 @@ export type PropertyCategory = typeof propertyCategories.$inferSelect;
 
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type Property = typeof properties.$inferSelect;
+
+export type InsertRoomCategory = z.infer<typeof insertRoomCategorySchema>;
+export type RoomCategory = typeof roomCategories.$inferSelect;
 
 export type InsertBlog = z.infer<typeof insertBlogSchema>;
 export type Blog = typeof blogs.$inferSelect;
