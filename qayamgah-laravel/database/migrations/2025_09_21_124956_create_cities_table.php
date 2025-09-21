@@ -13,11 +13,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('cities', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
-            $table->string('name');
-            $table->string('slug')->unique();
-            $table->string('image');
-            $table->string('hero_image')->nullable();
+            $table->string('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->text('name');
+            $table->text('slug')->unique();
+            $table->text('image');
+            $table->text('hero_image')->nullable();
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
             $table->integer('property_count')->default(0);

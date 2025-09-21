@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -12,8 +13,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('blogs', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+            $table->string('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->text('title');
+            $table->text('slug')->unique();
+            $table->text('excerpt');
+            $table->text('content');
+            $table->text('image');
+            $table->timestamp('published_at')->default(DB::raw('now()'));
         });
     }
 

@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,10 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('room_categories', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
-        });
+        DB::statement('CREATE EXTENSION IF NOT EXISTS "pgcrypto";');
     }
 
     /**
@@ -22,6 +20,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('room_categories');
+        //
     }
 };

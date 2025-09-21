@@ -13,17 +13,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('vendors', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
-            $table->uuid('user_id');
-            $table->string('first_name');
-            $table->string('last_name');
-            $table->string('phone_no_1');
-            $table->string('phone_no_2')->nullable();
-            $table->string('cnic');
+            $table->string('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->string('user_id');
+            $table->text('first_name');
+            $table->text('last_name');
+            $table->text('phone_no_1');
+            $table->text('phone_no_2')->nullable();
+            $table->text('cnic');
             $table->text('address');
-            $table->string('city');
-            $table->string('country')->default('Pakistan');
-            $table->string('status')->default('pending'); // pending, approved, rejected
+            $table->text('city');
+            $table->text('country')->default('Pakistan');
+            $table->text('status')->default('pending'); // pending, approved, rejected
             $table->timestamp('created_at')->default(DB::raw('now()'));
             $table->timestamp('approved_at')->nullable();
             

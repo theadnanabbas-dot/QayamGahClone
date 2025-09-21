@@ -13,10 +13,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('property_categories', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
-            $table->string('name');
-            $table->string('image');
-            $table->string('slug')->unique();
+            $table->string('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->text('name');
+            $table->text('image');
+            $table->text('slug')->unique();
         });
     }
 

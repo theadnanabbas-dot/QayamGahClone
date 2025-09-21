@@ -13,16 +13,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
-            $table->string('username')->unique();
-            $table->string('email')->unique();
-            $table->string('password_hash');
-            $table->string('role')->default('customer'); // admin, property_owner, customer
-            $table->string('full_name')->nullable();
-            $table->string('phone')->nullable();
+            $table->string('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->text('username')->unique();
+            $table->text('email')->unique();
+            $table->text('password_hash');
+            $table->text('role')->default('customer'); // admin, property_owner, customer
+            $table->text('full_name')->nullable();
+            $table->text('phone')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamp('created_at')->default(DB::raw('now()'));
-            $table->timestamp('updated_at')->default(DB::raw('now()'));
         });
     }
 
