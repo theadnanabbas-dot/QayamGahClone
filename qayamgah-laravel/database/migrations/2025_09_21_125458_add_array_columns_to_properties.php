@@ -13,9 +13,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('properties', function (Blueprint $table) {
-            // Add text array columns for amenities and images
-            DB::statement('ALTER TABLE properties ADD COLUMN amenities text[] NOT NULL DEFAULT \'{}\'::text[]');
-            DB::statement('ALTER TABLE properties ADD COLUMN images text[] NOT NULL DEFAULT \'{}\'::text[]');
+            // Add JSONB columns for amenities and images (Laravel-compatible)
+            $table->jsonb('amenities')->default('[]');
+            $table->jsonb('images')->default('[]');
         });
     }
 
