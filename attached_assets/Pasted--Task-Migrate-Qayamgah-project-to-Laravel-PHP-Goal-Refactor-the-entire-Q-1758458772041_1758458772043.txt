@@ -1,0 +1,92 @@
+
+---
+
+**Task:** Migrate Qayamgah project to Laravel (PHP)
+
+> **Goal:**
+> Refactor the entire Qayamgah codebase (front-end + admin/vendor dashboards + user modules) into the **Laravel** framework using **PHP**, without changing any existing functionality or business logic.
+>
+> ---
+>
+> #### 1️⃣ Framework & Language
+>
+> * Convert all current files, controllers, models, and views to **Laravel 11 (PHP 8+)**.
+> * Use Laravel’s MVC structure:
+>
+>   * Controllers for business logic
+>   * Models for DB queries
+>   * Blade templates for views
+>   * Routes in `web.php` / `api.php` as needed.
+>
+> ---
+>
+> #### 2️⃣ Preserve Current Features
+>
+> * Admin & Vendor dashboards
+>
+> * Booking management module
+>
+> * Availability & calendar
+>
+> * User account area
+>
+> * Analytics & reports
+>
+> * Cancellation & refund rules (keep placeholders where “to be updated”).
+>
+> * Copy link/sharing features + any existing integrations.
+>
+> > **Important:** Do not remove or change core functionalities, routes, or data flow — only refactor to Laravel structure.
+>
+> ---
+>
+> #### 3️⃣ Database
+>
+> * Keep the existing schema & data intact.
+> * Create Laravel migrations for all tables so future updates are version-controlled.
+> * Configure `.env` for DB credentials.
+>
+> ---
+>
+> #### 4️⃣ Frontend
+>
+> * Convert UI to Blade templates.
+> * Ensure all forms, search bars, filters, and buttons remain functional.
+> * Use Laravel Mix or Vite for CSS/JS compilation.
+>
+> ---
+>
+> #### 5️⃣ Authentication & Security
+>
+> * Implement Laravel’s built-in authentication (guards, middleware) but keep current login/register flow.
+> * Add CSRF protection & validation where needed.
+>
+> ---
+>
+> #### 6️⃣ Routing
+>
+> * Map all old URLs to their Laravel equivalents (use route names).
+> * Maintain SEO-friendly slugs & query params.
+>
+> ---
+>
+> #### 7️⃣ Testing & Deployment
+>
+> * Test each module after migration (dashboards, booking, user area).
+> * Provide instructions for running migrations and seeding data.
+> * Make sure code is clean, documented, and production-ready.
+>
+> ---
+>
+> #### Deliverables
+>
+> * Full Laravel project folder with:
+>
+>   * `/app` (Controllers, Models, Middleware)
+>   * `/resources/views` (Blade templates)
+>   * `/routes` (web, api)
+>   * `/database/migrations`
+>   * `/public` (assets)
+> * Clear README for setup.
+
+---
