@@ -133,7 +133,7 @@ function StickyHeader({ onOpenVendorModal }: { onOpenVendorModal: () => void }) 
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t" data-testid="mobile-menu">
             <div className="flex flex-col space-y-4">
-              <Link href="/property" data-testid="mobile-link-properties">
+              <Link href="/listings" data-testid="mobile-link-properties">
                 <span className="text-foreground hover:text-primary block py-2">Properties</span>
               </Link>
               <Link href="/hotels" data-testid="mobile-link-hotels">
@@ -174,7 +174,7 @@ function HeroSection() {
       lookingFor: lookingFor,
       date: checkInDate
     });
-    window.location.href = `/property?${searchParams.toString()}`;
+    window.location.href = `/listings?${searchParams.toString()}`;
   };
 
   return (
@@ -464,7 +464,7 @@ function FeaturedPropertiesSection() {
         </Carousel>
         
         <div className="text-center mt-12">
-          <Link href="/property" data-testid="link-view-all-properties">
+          <Link href="/listings" data-testid="link-view-all-properties">
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-white">
               View All Properties
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -563,7 +563,7 @@ function Footer() {
           <div className="space-y-4">
             <h4 className="text-lg font-semibold" data-testid="footer-links-title">Quick Links</h4>
             <ul className="space-y-2">
-              <li><Link href="/property" data-testid="footer-link-properties"><span className="text-gray-300 hover:text-primary transition-colors">Properties</span></Link></li>
+              <li><Link href="/listings" data-testid="footer-link-properties"><span className="text-gray-300 hover:text-primary transition-colors">Properties</span></Link></li>
               <li><Link href="/hotels" data-testid="footer-link-hotels"><span className="text-gray-300 hover:text-primary transition-colors">Hotels</span></Link></li>
               <li><a href="#how-it-works" className="text-gray-300 hover:text-primary transition-colors" data-testid="footer-link-how-it-works">How It Works</a></li>
               <li><a href="#benefits" className="text-gray-300 hover:text-primary transition-colors" data-testid="footer-link-benefits">Benefits</a></li>

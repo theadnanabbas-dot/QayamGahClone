@@ -166,7 +166,7 @@ function ListingsHeader() {
               <h1 className="text-2xl font-bold" style={{ color: '#CC2B47' }}>Qayamgah</h1>
             </Link>
             <nav className="hidden md:flex space-x-6">
-              <Link href="/property" data-testid="link-properties">
+              <Link href="/listings" data-testid="link-properties">
                 <span className="text-gray-700 hover:text-[#CC2B47] font-medium">Properties</span>
               </Link>
               <Link href="/hotels" data-testid="link-hotels">

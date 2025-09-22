@@ -54,7 +54,7 @@ function Header() {
           </div>
           
           <nav className="hidden md:flex space-x-8">
-            <Link href="/property" data-testid="link-properties">
+            <Link href="/listings" data-testid="link-properties">
               <span className="text-gray-700 dark:text-gray-300 hover:text-primary">Properties</span>
             </Link>
             <Link href="/hotels" data-testid="link-hotels">
@@ -174,7 +174,7 @@ export default function PropertyDetails() {
           <p className="text-gray-600 dark:text-gray-400 mb-8">
             The property you're looking for doesn't exist or has been removed.
           </p>
-          <Link href="/property">
+          <Link href="/listings">
             <Button>Browse All Properties</Button>
           </Link>
         </div>
@@ -192,7 +192,7 @@ export default function PropertyDetails() {
           <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
             <Link href="/" className="hover:text-primary">Home</Link>
             <span>/</span>
-            <Link href="/property" className="hover:text-primary">Properties</Link>
+            <Link href="/listings" className="hover:text-primary">Properties</Link>
             <span>/</span>
             <span className="text-gray-900 dark:text-white" data-testid="text-breadcrumb-current">
               {property.title}
