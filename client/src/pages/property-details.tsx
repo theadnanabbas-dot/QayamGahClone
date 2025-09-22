@@ -186,9 +186,9 @@ export default function PropertyDetails() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <nav className="mb-8" data-testid="nav-breadcrumb">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        {/* Breadcrumb - Mobile Optimized */}
+        <nav className="mb-4 sm:mb-8" data-testid="nav-breadcrumb">
           <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
             <Link href="/" className="hover:text-primary">Home</Link>
             <span>/</span>
@@ -200,11 +200,11 @@ export default function PropertyDetails() {
           </div>
         </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+          {/* Main Content - Mobile Optimized */}
           <div className="lg:col-span-2">
-            {/* Image Gallery */}
-            <div className="mb-8" data-testid="section-image-gallery">
+            {/* Image Gallery - Mobile Optimized */}
+            <div className="mb-4 sm:mb-8" data-testid="section-image-gallery">
               <Carousel className="w-full">
                 <CarouselContent>
                   {property.images.map((image, index) => (
@@ -212,22 +212,22 @@ export default function PropertyDetails() {
                       <img 
                         src={image} 
                         alt={`${property.title} - Image ${index + 1}`}
-                        className="h-96 w-full object-cover rounded-lg"
+                        className="h-64 sm:h-80 lg:h-96 w-full object-cover rounded-lg"
                         data-testid={`img-property-gallery-${index}`}
                       />
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
+                <CarouselPrevious className="left-2 sm:left-4" />
+                <CarouselNext className="right-2 sm:right-4" />
               </Carousel>
             </div>
 
-            {/* Property Info */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 mb-8" data-testid="section-property-info">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
+            {/* Property Info - Mobile Optimized */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 mb-4 sm:mb-8" data-testid="section-property-info">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 space-y-2 sm:space-y-0">
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
                     {property.isNew && (
                       <Badge className="bg-green-500" data-testid="badge-new">New</Badge>
                     )}
@@ -236,7 +236,7 @@ export default function PropertyDetails() {
                     )}
                     <Badge variant="secondary" data-testid="badge-category">{property.category}</Badge>
                   </div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2" data-testid="text-property-title">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2" data-testid="text-property-title">
                     {property.title}
                   </h1>
                   <div className="flex items-center text-gray-600 dark:text-gray-400 mb-4">
@@ -246,9 +246,9 @@ export default function PropertyDetails() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center">
-                  <Star className="h-5 w-5 text-yellow-400 mr-1" />
-                  <span className="text-lg font-semibold" data-testid="text-property-rating">
+                <div className="flex items-center mt-2 sm:mt-0 self-start sm:self-auto">
+                  <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 mr-1" />
+                  <span className="text-base sm:text-lg font-semibold" data-testid="text-property-rating">
                     {property.rating}
                   </span>
                 </div>
@@ -259,49 +259,49 @@ export default function PropertyDetails() {
               </p>
             </div>
 
-            {/* Amenities */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 mb-8" data-testid="section-amenities">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            {/* Amenities - Mobile Optimized */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 mb-4 sm:mb-8" data-testid="section-amenities">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">
                 Amenities
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {property.amenities.map((amenity, index) => {
                   const IconComponent = getAmenityIcon(amenity);
                   return (
-                    <div key={index} className="flex items-center space-x-3" data-testid={`amenity-${index}`}>
-                      <IconComponent className="h-5 w-5 text-primary" />
-                      <span className="text-gray-700 dark:text-gray-300">{amenity}</span>
+                    <div key={index} className="flex items-center space-x-3 p-2 sm:p-0 bg-gray-50 dark:bg-gray-700 sm:bg-transparent sm:dark:bg-transparent rounded-lg sm:rounded-none" data-testid={`amenity-${index}`}>
+                      <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                      <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300">{amenity}</span>
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            {/* Room Categories */}
+            {/* Room Categories - Mobile Optimized */}
             {roomCategories && roomCategories.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 mb-8" data-testid="section-room-categories">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 mb-4 sm:mb-8" data-testid="section-room-categories">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">
                   Room Categories & Pricing
                 </h2>
-                <div className="space-y-4">
+                <div className="space-y-4 sm:space-y-6">
                   {roomCategories.map((category) => (
                     <Card key={category.id} className="border border-gray-200 dark:border-gray-700" data-testid={`card-room-category-${category.id}`}>
-                      <CardContent className="p-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                          {/* Room Details */}
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+                          {/* Room Details - Mobile Optimized */}
                           <div className="lg:col-span-2">
-                            <div className="flex items-start space-x-4">
+                            <div className="flex items-start space-x-3 sm:space-x-4">
                               <img
                                 src={`/api/images/room-categories/${category.name.toLowerCase().replace(/\s+/g, '-')}.jpg`}
                                 alt={category.name}
-                                className="w-24 h-24 object-cover rounded-lg"
+                                className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg flex-shrink-0"
                                 data-testid={`img-room-category-${category.id}`}
                                 onError={(e) => {
                                   e.currentTarget.src = '/api/images/placeholder-room.jpg';
                                 }}
                               />
-                              <div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2" data-testid={`text-room-name-${category.id}`}>
+                              <div className="flex-1">
+                                <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2" data-testid={`text-room-name-${category.id}`}>
                                   {category.name}
                                 </h3>
                                 <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
@@ -336,12 +336,12 @@ export default function PropertyDetails() {
                             </div>
                           </div>
 
-                          {/* Pricing Options */}
-                          <div className="lg:col-span-1">
+                          {/* Pricing Options - Mobile Optimized */}
+                          <div className="lg:col-span-1 mt-4 lg:mt-0">
                             <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                               Duration Pricing
                             </h4>
-                            <div className="space-y-2 text-sm">
+                            <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 lg:gap-0 lg:space-y-2 text-sm">
                               <div className="flex justify-between" data-testid={`pricing-4h-${category.id}`}>
                                 <span className="text-gray-600 dark:text-gray-400">4 hours:</span>
                                 <span className="font-semibold text-primary">PKR {parseFloat(category.pricePer4Hours).toLocaleString()}</span>

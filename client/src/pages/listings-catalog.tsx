@@ -129,7 +129,7 @@ function calculatePropertyPricing(roomCategories: RoomCategory[]): PropertyPrici
   return pricing;
 }
 
-// Pricing Table Component
+// Pricing Table Component - Mobile Optimized
 function PricingTable({ pricing }: { pricing: PropertyPricing }) {
   const durations = [
     { label: '4h', price: pricing.hour4 },
@@ -139,13 +139,13 @@ function PricingTable({ pricing }: { pricing: PropertyPricing }) {
   ];
 
   return (
-    <div className="bg-gray-50 rounded-lg p-3" data-testid="pricing-table">
-      <div className="text-xs font-medium text-[#8C8C8C] mb-2">Hourly Rates (PKR)</div>
-      <div className="grid grid-cols-2 gap-2">
+    <div className="bg-gray-50 rounded-lg p-3 sm:p-4" data-testid="pricing-table">
+      <div className="text-xs sm:text-sm font-medium text-[#8C8C8C] mb-2 sm:mb-3">Hourly Rates (PKR)</div>
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         {durations.map((duration) => (
-          <div key={duration.label} className="text-center">
-            <div className="text-xs font-medium text-[#252525]">{duration.label}</div>
-            <div className="text-sm font-bold text-[#CC2B47]">
+          <div key={duration.label} className="text-center py-1 sm:py-2">
+            <div className="text-xs sm:text-sm font-medium text-[#252525] mb-1">{duration.label}</div>
+            <div className="text-sm sm:text-base font-bold text-[#CC2B47]">
               {duration.price !== null ? `${duration.price.toLocaleString()}` : 'N/A'}
             </div>
           </div>
@@ -232,7 +232,7 @@ function EnhancedSearchFilters({
             <div className="p-4">
               <label className="block text-xs font-medium text-[#8C8C8C] mb-1">Where</label>
               <Select value={filters.location} onValueChange={onLocationChange} data-testid="select-location">
-                <SelectTrigger className="border-0 p-0 h-auto shadow-none">
+                <SelectTrigger className="border-0 p-0 shadow-none min-h-[44px] flex items-center">
                   <SelectValue placeholder="Search destinations" />
                 </SelectTrigger>
                 <SelectContent>
@@ -253,7 +253,7 @@ function EnhancedSearchFilters({
                 type="date" 
                 value={filters.checkInDate}
                 onChange={(e) => onDateChange(e.target.value)}
-                className="border-0 p-0 h-auto shadow-none"
+                className="border-0 p-0 shadow-none min-h-[44px] flex items-center"
                 data-testid="input-checkin-date"
               />
             </div>
@@ -262,7 +262,7 @@ function EnhancedSearchFilters({
             <div className="p-4">
               <label className="block text-xs font-medium text-[#8C8C8C] mb-1">Hours</label>
               <Select value={filters.hours} onValueChange={onHoursChange} data-testid="select-hours">
-                <SelectTrigger className="border-0 p-0 h-auto shadow-none">
+                <SelectTrigger className="border-0 p-0 shadow-none min-h-[44px] flex items-center">
                   <SelectValue placeholder="Duration" />
                 </SelectTrigger>
                 <SelectContent>
@@ -278,7 +278,7 @@ function EnhancedSearchFilters({
             <div className="p-4">
               <label className="block text-xs font-medium text-[#8C8C8C] mb-1">Guests</label>
               <Select value={filters.guests.toString()} onValueChange={(value) => onGuestsChange(parseInt(value))} data-testid="select-guests">
-                <SelectTrigger className="border-0 p-0 h-auto shadow-none">
+                <SelectTrigger className="border-0 p-0 shadow-none min-h-[44px] flex items-center">
                   <SelectValue placeholder="Add guests" />
                 </SelectTrigger>
                 <SelectContent>
@@ -296,7 +296,7 @@ function EnhancedSearchFilters({
               <Button 
                 variant="ghost" 
                 onClick={onToggleFilters}
-                className="h-auto p-0 text-[#252525] hover:text-[#CC2B47]"
+                className="min-h-[44px] p-2 text-[#252525] hover:text-[#CC2B47] flex items-center justify-start"
                 data-testid="button-toggle-filters"
               >
                 <SlidersHorizontal className="h-4 w-4 mr-2" />
@@ -309,7 +309,7 @@ function EnhancedSearchFilters({
             <div className="p-4">
               <Button 
                 onClick={onSearch}
-                className="w-full bg-[#CC2B47] hover:bg-[#AD2D43] text-white"
+                className="w-full bg-[#CC2B47] hover:bg-[#AD2D43] text-white min-h-[44px]"
                 data-testid="button-search"
               >
                 <Search className="h-4 w-4 mr-2" />
@@ -746,11 +746,11 @@ export default function ListingsCatalog() {
         onToggleFilters={() => setIsFiltersOpen(!isFiltersOpen)}
       />
       
-      {/* Main Content - 65/35 Split */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-250px)]">
-          {/* Listings Section - 65% */}
-          <div className="lg:col-span-2 overflow-y-auto">
+      {/* Main Content - Mobile Optimized 65/35 Split */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 min-h-[60vh] lg:h-[calc(100vh-250px)]">
+          {/* Listings Section - 65% - Mobile Optimized */}
+          <div className="lg:col-span-2 overflow-y-auto order-1 lg:order-none">
             <ResultsHeader
               resultCount={filteredProperties.length}
               viewMode={viewMode}
@@ -759,10 +759,10 @@ export default function ListingsCatalog() {
               onSortChange={setSortBy}
             />
             
-            {/* Properties Grid */}
+            {/* Properties Grid - Mobile Responsive */}
             {paginatedProperties.length > 0 ? (
               <>
-                <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`} data-testid="grid-listings">
+                <div className={`grid gap-4 sm:gap-6 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`} data-testid="grid-listings">
                   {paginatedProperties.map((property) => (
                     <PropertyListingCard key={property.id} property={property} />
                   ))}
