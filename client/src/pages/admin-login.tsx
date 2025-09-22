@@ -91,7 +91,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
@@ -100,7 +100,7 @@ export default function AdminLogin() {
               <Shield className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
             Admin Login
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
@@ -111,13 +111,13 @@ export default function AdminLogin() {
         {/* Login Form */}
         <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <CardHeader className="text-center">
-            <CardTitle className="text-xl">Sign In</CardTitle>
+            <CardTitle className="text-lg sm:text-xl">Sign In</CardTitle>
             <CardDescription>
               Enter your admin credentials to continue
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
               {/* Email Field */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
@@ -128,7 +128,7 @@ export default function AdminLogin() {
                   value={credentials.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   disabled={loginMutation.isPending}
-                  className="bg-white dark:bg-gray-700"
+                  className="min-h-[44px] bg-white dark:bg-gray-700"
                   data-testid="input-admin-email"
                 />
               </div>
@@ -144,14 +144,14 @@ export default function AdminLogin() {
                     value={credentials.password}
                     onChange={(e) => handleInputChange("password", e.target.value)}
                     disabled={loginMutation.isPending}
-                    className="bg-white dark:bg-gray-700 pr-10"
+                    className="min-h-[44px] bg-white dark:bg-gray-700 pr-10"
                     data-testid="input-admin-password"
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    className="absolute right-0 top-0 h-full min-w-[44px] px-3 py-2 hover:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
                     disabled={loginMutation.isPending}
                     data-testid="button-toggle-password"

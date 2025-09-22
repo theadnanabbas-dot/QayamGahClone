@@ -62,7 +62,7 @@ export default function CustomerLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 sm:p-6 lg:p-8">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-[url('/api/images/pattern.svg')] opacity-5"></div>
       
@@ -70,7 +70,7 @@ export default function CustomerLogin() {
         {/* Back to Home */}
         <div className="mb-6">
           <Link href="/" data-testid="link-back-home">
-            <Button variant="ghost" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+            <Button variant="ghost" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white min-h-[44px] px-3 py-2">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Home
             </Button>
@@ -83,7 +83,7 @@ export default function CustomerLogin() {
             <div className="mx-auto w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-4">
               <User className="h-6 w-6 text-white" />
             </div>
-            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+            <CardTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
               Customer Login
             </CardTitle>
             <CardDescription className="text-gray-600 dark:text-gray-400">
@@ -91,7 +91,7 @@ export default function CustomerLogin() {
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 sm:space-y-6">
             {/* Demo Credentials */}
             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-sm">
               <h4 className="font-medium text-green-900 dark:text-green-100 mb-2">Demo Credentials:</h4>
@@ -101,7 +101,7 @@ export default function CustomerLogin() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4" data-testid="customer-login-form">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4" data-testid="customer-login-form">
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
                 <Input
@@ -111,7 +111,7 @@ export default function CustomerLogin() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="transition-all duration-200 focus:ring-2 focus:ring-green-500"
+                  className="min-h-[44px] transition-all duration-200 focus:ring-2 focus:ring-green-500"
                   data-testid="input-email"
                 />
               </div>
@@ -126,14 +126,14 @@ export default function CustomerLogin() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="pr-10 transition-all duration-200 focus:ring-2 focus:ring-green-500"
+                    className="min-h-[44px] pr-10 transition-all duration-200 focus:ring-2 focus:ring-green-500"
                     data-testid="input-password"
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    className="absolute right-0 top-0 h-full min-w-[44px] px-3 py-2 hover:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
                     data-testid="button-toggle-password"
                   >
@@ -148,7 +148,7 @@ export default function CustomerLogin() {
 
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="w-full min-h-[44px] bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
                 disabled={isLoading}
                 data-testid="button-login"
               >
