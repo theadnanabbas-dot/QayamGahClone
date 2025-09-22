@@ -23,9 +23,9 @@ use App\Http\Controllers\PublicController;
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('register', [AuthController::class, 'register']);
-    Route::post('admin-login', [AuthController::class, 'login']);
-    Route::post('property-owner-login', [AuthController::class, 'login']);
-    Route::post('customer-login', [AuthController::class, 'login']);
+    Route::post('admin-login', [AuthController::class, 'adminLogin']);
+    Route::post('property-owner-login', [AuthController::class, 'propertyOwnerLogin']);
+    Route::post('customer-login', [AuthController::class, 'customerLogin']);
     Route::post('logout', [AuthController::class, 'logout']);
     Route::middleware('auth:sanctum')->get('me', [AuthController::class, 'me']);
 });
