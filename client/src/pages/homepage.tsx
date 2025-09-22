@@ -129,27 +129,27 @@ function StickyHeader({ onOpenVendorModal }: { onOpenVendorModal: () => void }) 
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Enhanced for better touch targets */}
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t" data-testid="mobile-menu">
-            <div className="flex flex-col space-y-4">
+            <div className="flex flex-col space-y-2">
               <Link href="/listings" data-testid="mobile-link-properties">
-                <span className="text-foreground hover:text-primary block py-2">Properties</span>
+                <span className="text-foreground hover:text-primary block py-3 px-3 rounded-md hover:bg-gray-50 transition-colors min-h-[44px] flex items-center font-medium">Properties</span>
               </Link>
               <Link href="/hotels" data-testid="mobile-link-hotels">
-                <span className="text-foreground hover:text-primary block py-2">Hotels</span>
+                <span className="text-foreground hover:text-primary block py-3 px-3 rounded-md hover:bg-gray-50 transition-colors min-h-[44px] flex items-center font-medium">Hotels</span>
               </Link>
-              <a href="#how-it-works" className="text-foreground hover:text-primary block py-2" data-testid="mobile-link-how-it-works">
+              <a href="#how-it-works" className="text-foreground hover:text-primary block py-3 px-3 rounded-md hover:bg-gray-50 transition-colors min-h-[44px] flex items-center font-medium" data-testid="mobile-link-how-it-works">
                 How it Works
               </a>
-              <a href="#benefits" className="text-foreground hover:text-primary block py-2" data-testid="mobile-link-benefits">
+              <a href="#benefits" className="text-foreground hover:text-primary block py-3 px-3 rounded-md hover:bg-gray-50 transition-colors min-h-[44px] flex items-center font-medium" data-testid="mobile-link-benefits">
                 Benefits
               </a>
-              <div className="flex flex-col space-y-2 pt-4 border-t">
-                <Button variant="ghost" onClick={onOpenVendorModal} className="justify-start" data-testid="mobile-button-login">
+              <div className="flex flex-col space-y-3 pt-4 border-t mt-4">
+                <Button variant="ghost" onClick={onOpenVendorModal} className="justify-start min-h-[44px] py-3 text-base" data-testid="mobile-button-login">
                   Login
                 </Button>
-                <Button onClick={onOpenVendorModal} className="bg-primary hover:bg-primary/90 text-white justify-start" data-testid="mobile-button-register">
+                <Button onClick={onOpenVendorModal} className="bg-primary hover:bg-primary/90 text-white justify-start min-h-[44px] py-3 text-base" data-testid="mobile-button-register">
                   Register
                 </Button>
               </div>
@@ -185,20 +185,20 @@ function HeroSection() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 animate-fade-in" data-testid="text-hero-title">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 animate-fade-in" data-testid="text-hero-title">
             Choose flexibility
           </h1>
-          <p className="text-xl md:text-2xl mb-12 text-white/90" data-testid="text-hero-subtitle">
+          <p className="text-lg sm:text-xl md:text-2xl mb-8 sm:mb-12 text-white/90 px-2 sm:px-0" data-testid="text-hero-subtitle">
             First time in Pakistan book for 3, 6, 12 or 24 hours and choose the check-in time you want.
           </p>
           
-          {/* Search Bar */}
-          <div className="bg-white rounded-lg p-6 shadow-xl">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Search Bar - Mobile Optimized */}
+          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-xl w-full max-w-4xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-foreground text-left">Location</label>
                 <Select value={location} onValueChange={setLocation} data-testid="select-location">
-                  <SelectTrigger>
+                  <SelectTrigger className="min-h-[44px] text-base">
                     <SelectValue placeholder="Select City" />
                   </SelectTrigger>
                   <SelectContent>
@@ -214,7 +214,7 @@ function HeroSection() {
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-foreground text-left">Looking For?</label>
                 <Select value={lookingFor} onValueChange={setLookingFor} data-testid="select-looking-for">
-                  <SelectTrigger>
+                  <SelectTrigger className="min-h-[44px] text-base">
                     <SelectValue placeholder="Property type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -232,19 +232,19 @@ function HeroSection() {
                   type="datetime-local" 
                   value={checkInDate}
                   onChange={(e) => setCheckInDate(e.target.value)}
-                  className="w-full" 
+                  className="w-full min-h-[44px] text-base" 
                   data-testid="input-checkin" 
                 />
               </div>
               
-              <div className="flex items-end">
+              <div className="flex items-end sm:col-span-2 lg:col-span-1">
                 <Button 
                   onClick={handleSearch}
-                  className="w-full bg-primary hover:bg-primary/90 text-white h-10"
+                  className="w-full bg-primary hover:bg-primary/90 text-white min-h-[44px] text-base font-medium"
                   data-testid="button-search"
                 >
                   <Search className="h-4 w-4 mr-2" />
-                  Search
+                  Search Properties
                 </Button>
               </div>
             </div>
