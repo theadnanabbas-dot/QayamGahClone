@@ -2,6 +2,18 @@
 
 Qayamgah is a full-stack property rental platform built with React, Express.js, and PostgreSQL. The application enables property owners to list rental spaces while customers can browse, search, and book properties. The system includes role-based access control with three user types: administrators, property owners, and customers, each with dedicated dashboards and functionality.
 
+## Recent Major Features
+
+### ByHours-Inspired Listings Catalog (September 2025)
+Successfully implemented a comprehensive listings catalog page (`/listings`) replicating the ByHours Madrid Search layout:
+- **65/35 Split Layout**: Property listings (65%) with Google Maps placeholder (35%)
+- **Enhanced Search Interface**: Location, check-in date, hours, guests filters with extended sidebar filters
+- **Working Filter System**: Price range, property type, rating, location, and guest capacity filters
+- **Modular Components**: Reusable header, search bar, filter sidebar, property cards, and map placeholder
+- **Data Integration**: Seamless integration with existing Qayamgah property data via API
+- **Responsive Design**: Optimized for desktop and mobile with proper brand colors (#CC2B47, #AD2D43)
+- **Booking Integration**: Property detail pages with room categories or contact fallback when unavailable
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.

@@ -9,10 +9,12 @@
   --card-foreground: hsl(210 25% 7.8431%);
   --popover: hsl(0 0% 100%);
   --popover-foreground: hsl(210 25% 7.8431%);
-  --primary: hsl(349 65% 49%);
+  --primary: hsl(349 65% 49%); /* #CC2B47 */
   --primary-foreground: hsl(0 0% 100%);
-  --secondary: hsl(348 59% 43%);
+  --secondary: hsl(348 59% 43%); /* #AD2D43 */
   --secondary-foreground: hsl(0 0% 100%);
+  --qayamgah-black: #252525;
+  --qayamgah-gray: #8C8C8C;
   --muted: hsl(240 1.9608% 90%);
   --muted-foreground: hsl(0 0% 55%);
   --accent: hsl(211.5789 51.3514% 92.7451%);

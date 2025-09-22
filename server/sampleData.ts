@@ -1364,5 +1364,94 @@ export async function loadSampleData() {
     status: "approved"
   }));
 
+  // Add room categories for some popular properties
+  // Find properties by slug to add room categories
+  const textileOffice = properties.find(p => p.slug === "textile-industry-office-faisalabad");
+  if (textileOffice) {
+    await storage.createRoomCategory({
+      propertyId: textileOffice.id,
+      name: "Standard Office",
+      image: "/api/images/properties/textile-office-standard.jpg",
+      maxGuestCapacity: 12,
+      bathrooms: 2,
+      beds: 0, // Office space
+      areaSqFt: 800,
+      pricePer4Hours: "1200.00",
+      pricePer6Hours: "1800.00",
+      pricePer12Hours: "3000.00",
+      pricePer24Hours: "5000.00"
+    });
+  }
+
+  const commercialPlaza = properties.find(p => p.slug === "commercial-plaza-blue-area");
+  if (commercialPlaza) {
+    await storage.createRoomCategory({
+      propertyId: commercialPlaza.id,
+      name: "Executive Suite",
+      image: "/api/images/properties/commercial-plaza-suite.jpg",
+      maxGuestCapacity: 8,
+      bathrooms: 1,
+      beds: 0, // Commercial space
+      areaSqFt: 1200,
+      pricePer4Hours: "3800.00",
+      pricePer6Hours: "5700.00",
+      pricePer12Hours: "9500.00",
+      pricePer24Hours: "15000.00"
+    });
+  }
+
+  const boutiqueHotel = properties.find(p => p.slug === "boutique-hotel-model-town");
+  if (boutiqueHotel) {
+    await storage.createRoomCategory({
+      propertyId: boutiqueHotel.id,
+      name: "Boutique Room",
+      image: "/api/images/properties/boutique-hotel-room.jpg",
+      maxGuestCapacity: 2,
+      bathrooms: 1,
+      beds: 1,
+      areaSqFt: 280,
+      pricePer4Hours: "1500.00",
+      pricePer6Hours: "2200.00",
+      pricePer12Hours: "3500.00",
+      pricePer24Hours: "5500.00"
+    });
+  }
+
+  const modernApartment = properties.find(p => p.slug === "modern-apartment-faisalabad");
+  if (modernApartment) {
+    await storage.createRoomCategory({
+      propertyId: modernApartment.id,
+      name: "Modern Studio",
+      image: "/api/images/properties/modern-apartment-studio.jpg",
+      maxGuestCapacity: 4,
+      bathrooms: 2,
+      beds: 1,
+      areaSqFt: 450,
+      pricePer4Hours: "1600.00",
+      pricePer6Hours: "2400.00",
+      pricePer12Hours: "3800.00",
+      pricePer24Hours: "6000.00"
+    });
+  }
+
+  const executiveLodge = properties.find(p => p.slug === "executive-lodge-rawalpindi");
+  if (executiveLodge) {
+    await storage.createRoomCategory({
+      propertyId: executiveLodge.id,
+      name: "Executive Room",
+      image: "/api/images/properties/executive-lodge-room.jpg",
+      maxGuestCapacity: 3,
+      bathrooms: 1,
+      beds: 1,
+      areaSqFt: 320,
+      pricePer4Hours: "2400.00",
+      pricePer6Hours: "3600.00",
+      pricePer12Hours: "5500.00",
+      pricePer24Hours: "8500.00"
+    });
+  }
+
+  console.log(`✅ Successfully created room categories for multiple properties`);
+
   console.log(`Sample data loaded successfully! Created ${properties.length} properties across ${cityPropertyCounts.size} cities, ${bookings.length} sample bookings, and ${vendors.length} vendor profiles.`);
 }

@@ -442,7 +442,25 @@ export default function PropertyDetails() {
               />
             ) : (
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
-                <p className="text-gray-500 dark:text-gray-400">Loading booking options...</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Contact for Booking
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Room options are being prepared. Please contact us directly for immediate booking.
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-[#CC2B47]" />
+                    <span>+92-21-1234567</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="h-4 w-4 text-[#CC2B47]" />
+                    <span>Available 24/7</span>
+                  </div>
+                  <Button className="w-full bg-[#CC2B47] hover:bg-[#AD2D43] mt-4" data-testid="button-contact-booking">
+                    Contact for Booking
+                  </Button>
+                </div>
               </div>
             )}
             <LegacyBookingForm property={property} />
