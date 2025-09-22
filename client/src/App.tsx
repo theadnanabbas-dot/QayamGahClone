@@ -36,7 +36,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Homepage} />
-      <Route path="/property" component={PropertyListing} />
+      <Route path="/property" component={() => { window.location.replace('/listings'); return null; }} />
       <Route path="/listings" component={ListingsCatalog} />
       <Route path="/property-details/:slug" component={PropertyDetails} />
       <Route path="/checkout" component={Checkout} />

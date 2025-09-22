@@ -1,0 +1,80 @@
+
+---
+
+### Prompt for Replit
+
+**Task:** Listings Page Integration + Property Cleanup + Price Display (with fallback)
+
+---
+
+#### 1️⃣ Replace Property Page With Listings Page
+
+* Across the entire site, replace all routes and links pointing to the old “Property Page” with the **new Listings Catalog page** (the ByHours-style catalog).
+* Update:
+
+  * Header nav items
+  * Footer links
+  * Any “View All Properties” buttons
+  * Vendor/admin redirects after adding a new property
+
+---
+
+#### 2️⃣ Remove Unneeded Dummy Properties
+
+* From the database, **delete every dummy property** except:
+
+  * `Pearl Continental Karachi`
+  * `Sunrise Residency Gulshan`
+* Verify these two properties display correctly on:
+
+  * Vendor dashboard
+  * Listings page
+  * Single-listing page
+
+---
+
+#### 3️⃣ Price Display in Listings Catalog
+
+* On every property card in the catalog:
+
+  * Show the price for these four options (using the current property pricing fields):
+
+    * `4 Hours`
+    * `6 Hours`
+    * `12 Hours`
+    * `24 Hours`
+  * If the property has multiple room categories:
+
+    * For each duration, display the **lowest price** across all categories.
+    * Example:
+
+      * Deluxe Room → 4h = 5,000 | 6h = 7,000
+      * Standard Room → 4h = 3,500 | 6h = 5,500
+      * Display → “From PKR 3,500 (4h)” etc.
+
+✅ **Fallback rule for missing prices:**
+
+* If the vendor didn’t set a price for a given duration (4h, 6h, 12h, or 24h), display `Not Available` in that duration’s box.
+
+---
+
+#### 4️⃣ Testing & Validation
+
+* Check both `Pearl Continental Karachi` and `Sunrise Residency Gulshan`:
+
+  * They should appear in the catalog with the correct prices or `Not Available` for unset durations.
+  * “Book Now” must still link to the single-property page.
+* Verify that no pages or buttons still point to the old property page.
+
+---
+
+#### 5️⃣ Deliverables
+
+* Site-wide integration of the new listings catalog.
+* Database cleaned with only the two specified properties.
+* Pricing table in the catalog shows:
+
+  * Cheapest category price for each duration.
+  * `Not Available` where vendor hasn’t set a price.
+
+---

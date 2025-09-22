@@ -85,7 +85,7 @@ export default function Checkout() {
         description: "Please select a property first.",
         variant: "destructive"
       });
-      setLocation('/property');
+      setLocation('/listings');
     }
   }, []);
 

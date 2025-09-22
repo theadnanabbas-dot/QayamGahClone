@@ -84,7 +84,7 @@ function StickyHeader({ onOpenVendorModal }: { onOpenVendorModal: () => void }) 
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
-            <Link href="/property" data-testid="link-properties">
+            <Link href="/listings" data-testid="link-properties">
               <span className="text-foreground hover:text-primary transition-colors font-medium">Properties</span>
             </Link>
             <Link href="/hotels" data-testid="link-hotels">

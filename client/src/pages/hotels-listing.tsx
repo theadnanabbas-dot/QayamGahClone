@@ -45,7 +45,7 @@ function Header() {
           </div>
           
           <nav className="hidden md:flex space-x-8">
-            <Link href="/property" data-testid="link-properties">
+            <Link href="/listings" data-testid="link-properties">
               <span className="text-gray-700 dark:text-gray-300 hover:text-primary">Properties</span>
             </Link>
             <Link href="/hotels" data-testid="link-hotels">
