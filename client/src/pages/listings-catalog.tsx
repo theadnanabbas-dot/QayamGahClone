@@ -70,6 +70,91 @@ interface PropertyCategory {
   slug: string;
 }
 
+interface RoomCategory {
+  id: string;
+  propertyId: string;
+  name: string;
+  image: string;
+  maxGuestCapacity: number;
+  bathrooms: number;
+  beds: number;
+  areaSqFt: number;
+  pricePer4Hours: string;
+  pricePer6Hours: string;
+  pricePer12Hours: string;
+  pricePer24Hours: string;
+}
+
+interface PropertyPricing {
+  hour4: number | null;
+  hour6: number | null;
+  hour12: number | null;
+  hour24: number | null;
+}
+
+// Utility function to calculate lowest pricing from room categories
+function calculatePropertyPricing(roomCategories: RoomCategory[]): PropertyPricing {
+  if (!roomCategories || roomCategories.length === 0) {
+    return { hour4: null, hour6: null, hour12: null, hour24: null };
+  }
+
+  const pricing: PropertyPricing = {
+    hour4: null,
+    hour6: null,
+    hour12: null,
+    hour24: null
+  };
+
+  roomCategories.forEach(category => {
+    // Parse prices and find the minimum for each duration
+    const price4 = parseFloat(category.pricePer4Hours);
+    const price6 = parseFloat(category.pricePer6Hours);
+    const price12 = parseFloat(category.pricePer12Hours);
+    const price24 = parseFloat(category.pricePer24Hours);
+
+    if (!isNaN(price4)) {
+      pricing.hour4 = pricing.hour4 === null ? price4 : Math.min(pricing.hour4, price4);
+    }
+    if (!isNaN(price6)) {
+      pricing.hour6 = pricing.hour6 === null ? price6 : Math.min(pricing.hour6, price6);
+    }
+    if (!isNaN(price12)) {
+      pricing.hour12 = pricing.hour12 === null ? price12 : Math.min(pricing.hour12, price12);
+    }
+    if (!isNaN(price24)) {
+      pricing.hour24 = pricing.hour24 === null ? price24 : Math.min(pricing.hour24, price24);
+    }
+  });
+
+  return pricing;
+}
+
+// Pricing Table Component
+function PricingTable({ pricing }: { pricing: PropertyPricing }) {
+  const durations = [
+    { label: '4h', price: pricing.hour4 },
+    { label: '6h', price: pricing.hour6 },
+    { label: '12h', price: pricing.hour12 },
+    { label: '24h', price: pricing.hour24 }
+  ];
+
+  return (
+    <div className="bg-gray-50 rounded-lg p-3" data-testid="pricing-table">
+      <div className="text-xs font-medium text-[#8C8C8C] mb-2">Hourly Rates (PKR)</div>
+      <div className="grid grid-cols-2 gap-2">
+        {durations.map((duration) => (
+          <div key={duration.label} className="text-center">
+            <div className="text-xs font-medium text-[#252525]">{duration.label}</div>
+            <div className="text-sm font-bold text-[#CC2B47]">
+              {duration.price !== null ? `${duration.price.toLocaleString()}` : 'N/A'}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Header Component - ByHours Style
 function ListingsHeader() {
   return (
@@ -301,6 +386,19 @@ function EnhancedSearchFilters({
 function PropertyListingCard({ property }: { property: Property }) {
   const [isFavorited, setIsFavorited] = useState(false);
   
+  // Fetch room categories to calculate pricing
+  const { data: roomCategories = [] } = useQuery<RoomCategory[]>({
+    queryKey: [`/api/room-categories`, { propertyId: property.id }],
+    queryFn: async () => {
+      const response = await fetch(`/api/room-categories?propertyId=${property.id}`);
+      if (!response.ok) throw new Error('Failed to fetch room categories');
+      return response.json();
+    }
+  });
+  
+  // Calculate lowest pricing for each duration
+  const pricing = calculatePropertyPricing(roomCategories);
+  
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow" data-testid={`card-property-${property.slug}`}>
       <div className="relative">
@@ -376,12 +474,14 @@ function PropertyListingCard({ property }: { property: Property }) {
           </div>
         </div>
         
+        {/* Pricing Table */}
+        <div className="mb-4">
+          <PricingTable pricing={pricing} />
+        </div>
+        
         <div className="flex items-center justify-between">
-          <div>
-            <div className="text-xl font-bold text-[#252525]" data-testid={`text-property-price-${property.slug}`}>
-              {property.pricePerHour ? `Rs. ${property.pricePerHour}` : 'Price available'}
-            </div>
-            <div className="text-sm text-[#8C8C8C]">per hour</div>
+          <div className="text-xs text-[#8C8C8C]">
+            From lowest available rate
           </div>
           <Link href={`/property-details/${property.slug}`} data-testid={`link-book-now-${property.slug}`}>
             <Button className="bg-[#CC2B47] hover:bg-[#AD2D43] text-white">
