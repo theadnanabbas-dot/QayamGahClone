@@ -217,25 +217,25 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="container mx-auto px-4">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Checkout</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Complete your booking details</p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Checkout</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1 sm:mt-2">Complete your booking details</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[65%_35%] gap-8">
-          {/* Left Panel - Primary Guest Form (65%) */}
+        <div className="grid grid-cols-1 lg:grid-cols-[65%_35%] gap-4 sm:gap-6 lg:gap-8">
+          {/* Left Panel - Primary Guest Form (65%) - Mobile Optimized */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5" />
                 Primary Guest
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Name Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="space-y-4 sm:space-y-6">
+              {/* Name Fields - Mobile Optimized */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">First Name *</label>
                   <Input
@@ -243,7 +243,7 @@ export default function Checkout() {
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
                     placeholder="Enter first name"
                     data-testid="input-first-name"
-                    className={errors.firstName ? 'border-red-500' : ''}
+                    className={`min-h-[44px] ${errors.firstName ? 'border-red-500' : ''}`}
                   />
                   {errors.firstName && (
                     <p className="text-sm text-red-500 flex items-center gap-1">
@@ -259,7 +259,7 @@ export default function Checkout() {
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
                     placeholder="Enter last name"
                     data-testid="input-last-name"
-                    className={errors.lastName ? 'border-red-500' : ''}
+                    className={`min-h-[44px] ${errors.lastName ? 'border-red-500' : ''}`}
                   />
                   {errors.lastName && (
                     <p className="text-sm text-red-500 flex items-center gap-1">
@@ -270,8 +270,8 @@ export default function Checkout() {
                 </div>
               </div>
 
-              {/* Email Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Email Fields - Mobile Optimized */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Email Address *</label>
                   <Input
@@ -280,7 +280,7 @@ export default function Checkout() {
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     placeholder="Enter email address"
                     data-testid="input-email"
-                    className={errors.email ? 'border-red-500' : ''}
+                    className={`min-h-[44px] ${errors.email ? 'border-red-500' : ''}`}
                   />
                   {errors.email && (
                     <p className="text-sm text-red-500 flex items-center gap-1">
@@ -297,7 +297,7 @@ export default function Checkout() {
                     onChange={(e) => handleInputChange('confirmEmail', e.target.value)}
                     placeholder="Confirm email address"
                     data-testid="input-confirm-email"
-                    className={errors.confirmEmail ? 'border-red-500' : ''}
+                    className={`min-h-[44px] ${errors.confirmEmail ? 'border-red-500' : ''}`}
                   />
                   {errors.confirmEmail && (
                     <p className="text-sm text-red-500 flex items-center gap-1">
@@ -308,8 +308,8 @@ export default function Checkout() {
                 </div>
               </div>
 
-              {/* Phone Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Phone Fields - Mobile Optimized */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Phone No. *</label>
                   <Input
@@ -318,7 +318,7 @@ export default function Checkout() {
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     placeholder="Enter phone number"
                     data-testid="input-phone"
-                    className={errors.phone ? 'border-red-500' : ''}
+                    className={`min-h-[44px] ${errors.phone ? 'border-red-500' : ''}`}
                   />
                   {errors.phone && (
                     <p className="text-sm text-red-500 flex items-center gap-1">
@@ -335,6 +335,7 @@ export default function Checkout() {
                     onChange={(e) => handleInputChange('alternatePhone', e.target.value)}
                     placeholder="Enter alternate phone"
                     data-testid="input-alternate-phone"
+                    className="min-h-[44px]"
                   />
                 </div>
               </div>
@@ -343,7 +344,7 @@ export default function Checkout() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Expected Time of Arrival *</label>
                 <Select value={formData.arrivalTime} onValueChange={(value) => handleInputChange('arrivalTime', value)} data-testid="select-arrival-time">
-                  <SelectTrigger className={errors.arrivalTime ? 'border-red-500' : ''}>
+                  <SelectTrigger className={`min-h-[44px] ${errors.arrivalTime ? 'border-red-500' : ''}`}>
                     <SelectValue placeholder="Select arrival time" />
                   </SelectTrigger>
                   <SelectContent>
@@ -373,6 +374,7 @@ export default function Checkout() {
                   placeholder="Enter any special requests or messages"
                   rows={3}
                   data-testid="textarea-message"
+                  className="min-h-[44px]"
                 />
               </div>
 
@@ -392,15 +394,15 @@ export default function Checkout() {
             </CardContent>
           </Card>
 
-          {/* Right Panel - Verify & Confirm (35%) */}
+          {/* Right Panel - Verify & Confirm (35%) - Mobile Optimized */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                 Verify & Confirm
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4 sm:space-y-6">
               {/* Booking Details */}
               <div className="space-y-4">
                 <div>
@@ -471,7 +473,7 @@ export default function Checkout() {
 
                 {/* Confirm Button */}
                 <Button
-                  className="w-full"
+                  className="w-full min-h-[44px]"
                   size="lg"
                   onClick={handleConfirmBooking}
                   disabled={createBookingMutation.isPending || !agreedToTerms}
