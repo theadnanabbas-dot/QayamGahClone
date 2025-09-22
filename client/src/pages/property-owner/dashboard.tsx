@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -235,53 +236,59 @@ function DashboardContent() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <Building2 className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900 dark:text-gray-100">
-                    Add New Property
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    List a new rental property
-                  </p>
+            <Link href="/property-owner/add-property" data-testid="link-add-property">
+              <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer min-h-[44px]">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <Building2 className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                      Add New Property
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      List a new rental property
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Link>
 
-            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <Calendar className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900 dark:text-gray-100">
-                    Manage Bookings
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Review pending bookings
-                  </p>
+            <Link href="/property-owner/bookings" data-testid="link-manage-bookings">
+              <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer min-h-[44px]">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <Calendar className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                      Manage Bookings
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Review pending bookings
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Link>
 
-            <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-purple-600" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900 dark:text-gray-100">
-                    View Transactions
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Track your earnings
-                  </p>
+            <Link href="/property-owner/transactions" data-testid="link-view-transactions">
+              <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer min-h-[44px]">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <DollarSign className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                      View Transactions
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Track your earnings
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Link>
           </div>
         </CardContent>
       </Card>

@@ -57,15 +57,15 @@ function PropertyOwnerHeader({ user, onLogout }: { user: any; onLogout: () => vo
   return (
     <header className="bg-white dark:bg-gray-900 shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between min-h-16 py-3">
           <div className="flex items-center">
             <Link href="/property-owner" data-testid="link-dashboard-home">
-              <h1 className="text-2xl font-bold text-blue-600">Property Owner Dashboard</h1>
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">Property Owner Dashboard</h1>
             </Link>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <div className="hidden sm:flex items-center space-x-2">
               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                 Property Owner
               </Badge>
@@ -74,15 +74,17 @@ function PropertyOwnerHeader({ user, onLogout }: { user: any; onLogout: () => vo
               </span>
             </div>
             <Link href="/" data-testid="link-public-site">
-              <Button variant="outline">View Public Site</Button>
+              <Button variant="outline" className="hidden md:flex">View Public Site</Button>
             </Link>
             <Button 
               variant="outline" 
               onClick={onLogout}
               data-testid="button-logout"
+              className="min-h-[44px]"
             >
               <LogOut className="h-4 w-4 mr-2" />
-              Logout
+              <span className="hidden sm:inline">Logout</span>
+              <span className="sm:hidden">Exit</span>
             </Button>
           </div>
         </div>
@@ -220,18 +222,20 @@ function BookingsManagement({ ownerId }: { ownerId: string }) {
 
   return (
     <div className="space-y-6" data-testid="bookings-management">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Property Bookings</h2>
-        <div className="flex items-center space-x-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+        <h2 className="text-xl sm:text-2xl font-bold">Property Bookings</h2>
+        <div className="flex items-center space-x-2 self-start sm:self-auto">
           <span className="text-sm text-gray-600">Total Bookings:</span>
           <Badge variant="secondary">{bookings.length}</Badge>
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
+      {/* Mobile-friendly table */}
+      <div className="hidden sm:block">
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Property</TableHead>
@@ -285,10 +289,56 @@ function BookingsManagement({ ownerId }: { ownerId: string }) {
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Mobile booking cards */}
+      <div className="sm:hidden space-y-4">
+        {bookings.map((booking) => (
+          <Card key={booking.id} data-testid={`mobile-booking-card-${booking.id}`}>
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-medium text-base">{getPropertyTitle(booking.propertyId)}</h3>
+                    <p className="text-sm text-gray-500">Guest #{booking.userId.slice(-6)}</p>
+                  </div>
+                  <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">Date:</span>
+                    <div>{format(new Date(booking.startAt), "MMM dd, yyyy")}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Time:</span>
+                    <div>{format(new Date(booking.startAt), "HH:mm")} - {format(new Date(booking.endAt), "HH:mm")}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Duration:</span>
+                    <div>{Math.round((new Date(booking.endAt).getTime() - new Date(booking.startAt).getTime()) / (1000 * 60 * 60))} hours</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Amount:</span>
+                    <div className="font-medium">PKR {booking.totalPrice}</div>
+                  </div>
+                </div>
+                
+                <div className="pt-2">
+                  <Button size="sm" variant="outline" className="min-h-[44px] w-full" data-testid={`button-view-mobile-booking-${booking.id}`}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Details
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {bookings.length === 0 && (
         <Card className="p-8 text-center">
