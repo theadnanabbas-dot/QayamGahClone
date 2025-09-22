@@ -27,7 +27,7 @@ Route::prefix('auth')->group(function () {
     Route::post('property-owner-login', [AuthController::class, 'login']);
     Route::post('customer-login', [AuthController::class, 'login']);
     Route::post('logout', [AuthController::class, 'logout']);
-    Route::get('me', [AuthController::class, 'me']);
+    Route::middleware('auth:sanctum')->get('me', [AuthController::class, 'me']);
 });
 
 // Public routes (no authentication required)
@@ -51,7 +51,7 @@ Route::get('images/{path}', [PublicController::class, 'getImage'])->where('path'
 Route::post('bookings', [BookingController::class, 'createBooking']);
 
 // Admin routes (requires admin role)
-Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
+Route::prefix('admin')->middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::get('dashboard-stats', [AdminController::class, 'getDashboardStats']);
     Route::get('users', [AdminController::class, 'getUsers']);
     Route::get('users/role/{role}', [AdminController::class, 'getUsersByRole']);
@@ -90,7 +90,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
 });
 
 // Property Owner routes (requires property_owner role)
-Route::prefix('property-owner')->middleware(['auth', 'role:property_owner'])->group(function () {
+Route::prefix('property-owner')->middleware(['auth:sanctum', 'role:property_owner'])->group(function () {
     Route::get('dashboard-stats', [PropertyOwnerController::class, 'getDashboardStats']);
     Route::get('properties', [PropertyOwnerController::class, 'getMyProperties']);
     Route::post('properties', [PropertyOwnerController::class, 'createProperty']);
@@ -112,7 +112,7 @@ Route::prefix('property-owner')->middleware(['auth', 'role:property_owner'])->gr
 });
 
 // Customer routes (for authenticated customers)
-Route::middleware(['auth', 'role:customer'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
     Route::get('my-bookings', [BookingController::class, 'getMyBookings']);
     Route::get('bookings/{id}', [BookingController::class, 'getBooking']);
 });
