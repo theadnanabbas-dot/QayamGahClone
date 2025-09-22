@@ -93,8 +93,8 @@ function createSQLiteSchema(db) {
       owner_id TEXT REFERENCES users(id),
       bedrooms INTEGER NOT NULL DEFAULT 0,
       bathrooms INTEGER NOT NULL DEFAULT 0,
-      amenities TEXT, -- JSON array stored as text
-      images TEXT,    -- JSON array stored as text
+      amenities TEXT NOT NULL DEFAULT '[]', -- JSON array stored as text
+      images TEXT NOT NULL DEFAULT '[]',    -- JSON array stored as text
       main_image TEXT NOT NULL,
       is_featured BOOLEAN NOT NULL DEFAULT 0,
       is_active BOOLEAN NOT NULL DEFAULT 1,
@@ -151,22 +151,20 @@ function createSQLiteSchema(db) {
       slug TEXT NOT NULL UNIQUE,
       excerpt TEXT NOT NULL,
       content TEXT NOT NULL,
-      image TEXT,
+      image TEXT NOT NULL,
       published_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
-  // Testimonials table
+  // Testimonials table (matching shared/schema.ts exactly)
   db.exec(`
     CREATE TABLE IF NOT EXISTS testimonials (
       id TEXT PRIMARY KEY,
-      customer_name TEXT NOT NULL,
-      role TEXT,
+      name TEXT NOT NULL,
+      role TEXT NOT NULL,
       content TEXT NOT NULL,
-      image TEXT,
-      rating INTEGER NOT NULL DEFAULT 5,
-      property_id TEXT,
-      is_approved BOOLEAN DEFAULT 1
+      image TEXT NOT NULL,
+      rating INTEGER NOT NULL DEFAULT 5
     )
   `);
 
@@ -225,18 +223,60 @@ async function exportToSQLite() {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
-    const demoUsers = [
-      ['admin-001', 'admin', 'admin@qayamgah.com', 'hashed_admin123', 'admin', 'System Administrator', null, 1, new Date().toISOString()],
-      ['owner-001', 'propertyowner', 'owner@qayamgah.com', 'hashed_owner123', 'property_owner', 'Property Owner Demo', null, 1, new Date().toISOString()],
-      // Create users for existing property owners (from actual data)
-      ['840ab626-a05c-40d1-a950-8006599203af', 'owner1', 'owner1@qayamgah.com', 'hashed_password', 'property_owner', 'Property Owner 1', null, 1, new Date().toISOString()],
-      ['ce6026c0-a050-4f0d-8adc-e48fdb78affb', 'owner2', 'owner2@qayamgah.com', 'hashed_password', 'property_owner', 'Property Owner 2', null, 1, new Date().toISOString()]
-    ];
+    // Only create users that are actually referenced in the data to satisfy FK constraints
+    // Collect owner IDs and booking user IDs separately to assign correct roles
+    const ownerIds = new Set();
+    const customerIds = new Set();
     
-    for (const user of demoUsers) {
+    // Add owner IDs from properties
+    properties.forEach(prop => {
+      if (prop.ownerId) ownerIds.add(prop.ownerId);
+    });
+    
+    // Add user IDs from bookings (customers)
+    bookings.forEach(booking => {
+      if (booking.userId && !ownerIds.has(booking.userId)) {
+        customerIds.add(booking.userId);
+      }
+    });
+    
+    // Create minimal users with correct roles
+    const requiredUsers = [];
+    
+    // Create property owners
+    Array.from(ownerIds).forEach((userId, index) => {
+      requiredUsers.push([
+        userId,
+        `owner${index + 1}`,
+        `owner${index + 1}@qayamgah.com`,
+        'hashed_password',
+        'property_owner',
+        `Property Owner ${index + 1}`,
+        null,
+        1,
+        new Date().toISOString()
+      ]);
+    });
+    
+    // Create customer users
+    Array.from(customerIds).forEach((userId, index) => {
+      requiredUsers.push([
+        userId,
+        `customer${index + 1}`,
+        `customer${index + 1}@qayamgah.com`,
+        'hashed_password',
+        'customer',
+        `Customer ${index + 1}`,
+        null,
+        1,
+        new Date().toISOString()
+      ]);
+    });
+    
+    for (const user of requiredUsers) {
       userStmt.run(...user);
     }
-    console.log(`✅ Successfully inserted ${demoUsers.length} demo users`);
+    console.log(`✅ Successfully inserted ${requiredUsers.length} required users for FK constraints`);
     
     // Insert cities
     if (cities.length > 0) {
@@ -269,39 +309,56 @@ async function exportToSQLite() {
       console.log(`✅ Successfully inserted ${propertyCategories.length} property categories`);
     }
     
-    // Insert blogs
+    // Insert blogs (ensure image is not null)
     if (blogs.length > 0) {
-      console.log(`📊 Inserting ${blogs.length} blogs...`);
+      console.log(`📊 Processing ${blogs.length} blogs...`);
       const blogStmt = db.prepare(`
         INSERT OR REPLACE INTO blogs (id, title, slug, excerpt, content, image, published_at) 
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `);
       
+      let inserted = 0;
       for (const blog of blogs) {
-        blogStmt.run(
-          blog.id, blog.title, blog.slug, blog.excerpt, blog.content, 
-          blog.image, blog.publishedAt || new Date().toISOString()
-        );
+        // Only insert if we have ALL required fields (no fabrication)
+        if (blog.title && blog.slug && blog.excerpt && blog.content && blog.image) {
+          blogStmt.run(
+            blog.id, blog.title, blog.slug, blog.excerpt, blog.content, 
+            blog.image, blog.publishedAt || new Date().toISOString()
+          );
+          inserted++;
+        } else {
+          console.warn(`⚠️  Skipping blog ${blog.id}: missing required fields (title: ${!!blog.title}, slug: ${!!blog.slug}, excerpt: ${!!blog.excerpt}, content: ${!!blog.content}, image: ${!!blog.image})`);
+        }
       }
-      console.log(`✅ Successfully inserted ${blogs.length} blogs`);
+      console.log(`✅ Successfully inserted ${inserted} blogs`);
     }
     
-    // Insert testimonials
+    // Insert testimonials (map API fields to schema fields, skip if missing required data)
     if (testimonials.length > 0) {
-      console.log(`📊 Inserting ${testimonials.length} testimonials...`);
+      console.log(`📊 Processing ${testimonials.length} testimonials...`);
       const testimonialStmt = db.prepare(`
-        INSERT OR REPLACE INTO testimonials (id, customer_name, role, content, image, rating, property_id, is_approved) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT OR REPLACE INTO testimonials (id, name, role, content, image, rating) 
+        VALUES (?, ?, ?, ?, ?, ?)
       `);
       
+      let inserted = 0;
       for (const testimonial of testimonials) {
-        testimonialStmt.run(
-          testimonial.id, testimonial.customerName, testimonial.role || null, 
-          testimonial.content || testimonial.comment, testimonial.image, 
-          testimonial.rating || 5, testimonial.propertyId, toBool(testimonial.isApproved)
-        );
+        // Map API fields to schema fields - skip if missing required data
+        const name = testimonial.name || testimonial.customerName;
+        const role = testimonial.role;
+        const content = testimonial.content || testimonial.comment;
+        const image = testimonial.image;
+        const rating = testimonial.rating || 5;
+        
+        // Only insert if we have ALL required fields (no fabrication)
+        if (name && role && content && image) {
+          testimonialStmt.run(testimonial.id, name, role, content, image, rating);
+          inserted++;
+        } else {
+          console.warn(`⚠️  Skipping testimonial ${testimonial.id}: missing required fields (name: ${!!name}, role: ${!!role}, content: ${!!content}, image: ${!!image})`);
+        }
       }
-      console.log(`✅ Successfully inserted ${testimonials.length} testimonials`);
+      console.log(`✅ Successfully inserted ${inserted} testimonials`);
     }
     
     // Insert properties
@@ -315,21 +372,28 @@ async function exportToSQLite() {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       
+      let inserted = 0;
       for (const property of properties) {
-        // Use first image as main image if mainImage is not available
-        const mainImage = property.mainImage || (property.images && property.images.length > 0 ? property.images[0] : '/api/images/properties/default.jpg');
+        // Get main image from data - no fabrication
+        const mainImage = property.mainImage || (property.images && property.images.length > 0 ? property.images[0] : null);
         
-        propertyStmt.run(
-          property.id, property.title, property.slug, property.description,
-          property.propertyType || 'private', property.maxGuests || 1, property.address,
-          property.phoneNumber, property.roomCategoriesCount || 1, property.latitude,
-          property.longitude, property.cityId, property.categoryId, property.ownerId,
-          property.bedrooms || 0, property.bathrooms || 0, toJSON(property.amenities),
-          toJSON(property.images), mainImage, toBool(property.isFeature),
-          toBool(property.isActive), property.rating || 0, property.createdAt || new Date().toISOString()
-        );
+        // Only insert if we have all required fields (including main_image)
+        if (property.title && property.slug && property.address && mainImage) {
+          propertyStmt.run(
+            property.id, property.title, property.slug, property.description,
+            property.propertyType || 'private', property.maxGuests || 1, property.address,
+            property.phoneNumber, property.roomCategoriesCount || 1, property.latitude,
+            property.longitude, property.cityId, property.categoryId, property.ownerId,
+            property.bedrooms || 0, property.bathrooms || 0, toJSON(property.amenities || []),
+            toJSON(property.images || []), mainImage, toBool(property.isFeature),
+            toBool(property.isActive), property.rating || 0, property.createdAt || new Date().toISOString()
+          );
+          inserted++;
+        } else {
+          console.warn(`⚠️  Skipping property ${property.id}: missing required fields (title: ${!!property.title}, slug: ${!!property.slug}, address: ${!!property.address}, main_image: ${!!mainImage})`);
+        }
       }
-      console.log(`✅ Successfully inserted ${properties.length} properties`);
+      console.log(`✅ Successfully inserted ${inserted} properties`);
     }
     
     // Insert room categories
@@ -389,8 +453,29 @@ async function exportToSQLite() {
       CREATE INDEX IF NOT EXISTS idx_bookings_room_category ON bookings(room_category_id);
       CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings(user_id);
       CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
-      CREATE INDEX IF NOT EXISTS idx_testimonials_property ON testimonials(property_id);
     `);
+    
+    // Run integrity checks
+    console.log('\n🔍 Running database integrity checks...');
+    try {
+      // Check foreign key constraints
+      const fkCheck = db.prepare('PRAGMA foreign_key_check').all();
+      if (fkCheck.length > 0) {
+        console.warn('⚠️  Foreign key constraint violations found:', fkCheck);
+      } else {
+        console.log('✅ All foreign key constraints satisfied');
+      }
+      
+      // Quick integrity check
+      const integrityCheck = db.prepare('PRAGMA integrity_check').get();
+      if (integrityCheck.integrity_check === 'ok') {
+        console.log('✅ Database integrity check passed');
+      } else {
+        console.warn('⚠️  Database integrity issues:', integrityCheck);
+      }
+    } catch (error) {
+      console.warn('⚠️  Could not run integrity checks:', error.message);
+    }
     
     // Generate database statistics
     const tables = [
